@@ -1,0 +1,201 @@
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { mergeNotes } from "./merge.ts";
+import { SAMPLE_IDS, sampleNotes } from "./samples.ts";
+import type { Note } from "./types.ts";
+
+export type NotesState = {
+  notes: Record<string, Note>;
+  selectedId: string | null;
+  query: string;
+  activeTag: string | null;
+  panelOpen: boolean;
+  searchOpen: boolean;
+  guideOpen: boolean;
+  devicesOpen: boolean;
+  hasHydrated: boolean;
+  setHasHydrated: (value: boolean) => void;
+  seedIfEmpty: () => void;
+  setQuery: (query: string) => void;
+  setActiveTag: (tag: string | null) => void;
+  setSelectedId: (id: string | null) => void;
+  setPanelOpen: (open: boolean) => void;
+  setSearchOpen: (open: boolean) => void;
+  setGuideOpen: (open: boolean) => void;
+  setDevicesOpen: (open: boolean) => void;
+  createNote: () => string;
+  updateNote: (
+    id: string,
+    patch: Partial<Pick<Note, "heading" | "body" | "tags" | "pinned">>,
+  ) => void;
+  deleteNote: (id: string) => void;
+  restoreNote: (note: Note) => void;
+  importNotes: (incoming: unknown) => { applied: number; skipped: number };
+  clearStarterNotes: () => void;
+  mergeRemote: (remote: unknown) => { applied: number; skipped: number };
+  snapshot: (id: string) => Note | undefined;
+};
+
+function now() {
+  return Date.now();
+}
+
+export const useNotesStore = create<NotesState>()(
+  persist(
+    (set, get) => ({
+      notes: {},
+      selectedId: null,
+      query: "",
+      activeTag: null,
+      panelOpen: true,
+      searchOpen: false,
+      guideOpen: false,
+      devicesOpen: false,
+      hasHydrated: false,
+      setHasHydrated: (value) => set({ hasHydrated: value }),
+      seedIfEmpty: () => {
+        if (Object.keys(get().notes).length > 0) return;
+        set({ notes: sampleNotes() });
+      },
+      setQuery: (query) => set({ query }),
+      setActiveTag: (tag) => set({ activeTag: tag, searchOpen: true }),
+      setSelectedId: (id) =>
+        set({ selectedId: id, guideOpen: false, devicesOpen: false }),
+      setPanelOpen: (open) =>
+        set({
+          panelOpen: open,
+          ...(open
+            ? {}
+            : {
+                selectedId: null,
+                searchOpen: false,
+                guideOpen: false,
+                devicesOpen: false,
+              }),
+        }),
+      setSearchOpen: (open) =>
+        set({
+          searchOpen: open,
+          guideOpen: false,
+          devicesOpen: false,
+          ...(open ? {} : { query: "", activeTag: null }),
+        }),
+      setGuideOpen: (open) =>
+        set({
+          guideOpen: open,
+          ...(open
+            ? {
+                selectedId: null,
+                searchOpen: false,
+                devicesOpen: false,
+                panelOpen: true,
+              }
+            : {}),
+        }),
+      setDevicesOpen: (open) =>
+        set({
+          devicesOpen: open,
+          ...(open
+            ? {
+                selectedId: null,
+                searchOpen: false,
+                guideOpen: false,
+                panelOpen: true,
+              }
+            : {}),
+        }),
+      createNote: () => {
+        const id = crypto.randomUUID();
+        const note: Note = {
+          id,
+          heading: "",
+          body: "",
+          tags: [],
+          pinned: false,
+          updatedAt: now(),
+          deletedAt: null,
+        };
+        set((s) => ({
+          notes: { ...s.notes, [id]: note },
+          selectedId: id,
+          panelOpen: true,
+          query: "",
+          activeTag: null,
+          searchOpen: false,
+          guideOpen: false,
+          devicesOpen: false,
+        }));
+        return id;
+      },
+      updateNote: (id, patch) => {
+        const existing = get().notes[id];
+        if (!existing || existing.deletedAt) return;
+        const next: Note = { ...existing, ...patch, updatedAt: now() };
+        set((s) => ({ notes: { ...s.notes, [id]: next } }));
+      },
+      deleteNote: (id) => {
+        const existing = get().notes[id];
+        if (!existing) return;
+        const next: Note = { ...existing, deletedAt: now(), updatedAt: now() };
+        set((s) => ({
+          notes: { ...s.notes, [id]: next },
+          selectedId: s.selectedId === id ? null : s.selectedId,
+        }));
+      },
+      restoreNote: (note) => {
+        set((s) => ({ notes: { ...s.notes, [note.id]: note } }));
+      },
+      importNotes: (incoming) => {
+        let applied = 0;
+        let skipped = 0;
+        set((s) => {
+          const result = mergeNotes(s.notes, incoming);
+          applied = result.applied;
+          skipped = result.skipped;
+          return { notes: result.notes };
+        });
+        return { applied, skipped };
+      },
+      clearStarterNotes: () => {
+        set((s) => {
+          const notes = { ...s.notes };
+          const ts = now();
+          for (const id of SAMPLE_IDS) {
+            if (notes[id] && !notes[id].deletedAt) {
+              notes[id] = { ...notes[id], deletedAt: ts, updatedAt: ts };
+            }
+          }
+          return {
+            notes,
+            selectedId:
+              s.selectedId &&
+              (SAMPLE_IDS as readonly string[]).includes(s.selectedId)
+                ? null
+                : s.selectedId,
+          };
+        });
+      },
+      mergeRemote: (remote) => {
+        let applied = 0;
+        let skipped = 0;
+        set((s) => {
+          const result = mergeNotes(s.notes, remote);
+          applied = result.applied;
+          skipped = result.skipped;
+          return { notes: result.notes };
+        });
+        return { applied, skipped };
+      },
+      snapshot: (id) => get().notes[id],
+    }),
+    {
+      name: "wisp.notes.v1",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        notes: state.notes,
+        panelOpen: state.panelOpen,
+      }),
+      skipHydration: true,
+    },
+  ),
+);
