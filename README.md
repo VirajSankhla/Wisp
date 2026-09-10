@@ -38,51 +38,42 @@ That is the only “login.” There is no Google, no X, no email.
 
 ## Classic `.exe` (Windows) and `.apk` (Android)
 
-**Today, the install-from-browser path above is the supported way to get Wisp as an app.** It is free, has no store, and needs no compiler.
+**Fastest: install from the browser** (table above). That needs no GitHub files at all.
 
-A real installer file (`.exe`, `.dmg`, `.apk`) is the **same Wisp UI** wrapped with:
+**Want a real installer file from GitHub, no source on your laptop:**
 
-- **Desktop** — [Tauri](https://v2.tauri.app/) → `.exe` (Windows), `.dmg` (Mac), `.AppImage` (Linux)
-- **Android** — [Capacitor](https://capacitorjs.com/) → `.apk`
+1. Open **[Releases](https://github.com/VirajSankhla/Wisp/releases)**.
+2. Download `Wisp_…_x64-setup.exe` for Windows, and `app-debug.apk` (rename to `Wisp.apk`) for Android.
+3. Windows: run the `.exe`. Android: allow *Install unknown apps*, then open the `.apk`.
 
-Those wrappers are not a second notes app. If you (or a friend who can run Node) build them once, you can put the files on GitHub Releases or a USB stick and everyone else just downloads.
+Those files are built by GitHub’s computers (Actions), not on your machine. You never clone the repo.
 
-### Build a Windows `.exe`
+If the Releases page is empty, the latest build is still running: **[Actions](https://github.com/VirajSankhla/Wisp/actions)**. Signed-in you can also download the workflow artifacts there.
 
-On a Windows PC with Node 22+ and [Rust](https://rustup.rs/):
+### There is no database behind the QR
+
+The QR / `WISP.…` code is **not a login to a server**. Nothing is stored in Postgres, Firebase, or any cloud DB.
+
+- Each device keeps notes in **its own browser storage**.
+- The code is a 5-minute envelope around 48 random bytes.
+- Both devices derive the same AES key from those bytes.
+- Notes move as an **encrypted file** you save on one device and open on the other.
+
+No connection string. No API key. No account.
+
+### Build the installers yourself (optional)
+
+GitHub Actions (`.github/workflows/release-native.yml`) is the supported way.
+
+Locally, after `npm install` + `npm run build`:
 
 ```sh
-npm install
-npm install -D @tauri-apps/cli
-npx tauri init          # app name: Wisp, URL: the built web app
-npx tauri build
+npm run native:dist
+npx tauri build --bundles nsis   # Windows .exe (needs a Windows machine or the Actions runner)
+npx cap add android && npx cap copy android
+# then Android Studio → Build APK
 ```
 
-The installer lands in `src-tauri/target/release/bundle/nsis/` (`.exe`).
-
-Mac: `npx tauri build` → `.dmg`. Linux: `.AppImage` / `.deb`.
-
-### Build an Android `.apk`
-
-On a machine with Node 22+ and [Android Studio](https://developer.android.com/studio) (free):
-
-```sh
-npm install
-npm install @capacitor/core @capacitor/cli @capacitor/android
-npx cap init Wisp com.wisp.notes --web-dir dist
-npm run build
-npx cap add android
-npx cap copy
-npx cap open android
-```
-
-In Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)**. Share that `.apk`. Android will warn that it is from outside the Play Store — that is normal for a personal app.
-
-### iPhone
-
-You **cannot** honestly ship a random `.ipa` the way you ship an `.apk`. Apple requires a paid developer account and TestFlight / App Store for other people’s phones.
-
-For iPhone, use **Safari → Add to Home Screen**. That is the free, supported install.
 
 ---
 

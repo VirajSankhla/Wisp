@@ -3,3 +3,9 @@ node_modules/
 .github_repo
 .env
 .env.*
+native-dist/
+android/
+src-tauri/target/
+.vercel/
+dist/
+.DS_Store
