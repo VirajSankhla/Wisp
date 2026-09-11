@@ -4,8 +4,9 @@ node_modules/
 .env
 .env.*
 native-dist/
-android/
+/android/
 src-tauri/target/
 .vercel/
 dist/
 .DS_Store
+artifacts/

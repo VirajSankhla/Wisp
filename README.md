@@ -44,7 +44,7 @@ That is the only “login.” There is no Google, no X, no email.
 
 1. Open **[Releases](https://github.com/VirajSankhla/Wisp/releases)**.
 2. Download `Wisp_…_x64-setup.exe` for Windows, and `app-debug.apk` (rename to `Wisp.apk`) for Android.
-3. Windows: run the `.exe`. Android: allow *Install unknown apps*, then open the `.apk`.
+**Android overlay:** install the `.apk`, then Wisp → Devices → Enable edge tab. Allow *Display over other apps*. A tab sits on the right of the whole phone, over other apps. The browser install cannot do this. iPhone cannot do this.
 
 Those files are built by GitHub’s computers (Actions), not on your machine. You never clone the repo.
 

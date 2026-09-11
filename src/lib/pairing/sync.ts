@@ -102,10 +102,25 @@ function triggerDownload(filename: string, blob: Blob) {
   URL.revokeObjectURL(url);
 }
 
+export function encodePeerSync(bundle: PeerSync): string {
+  return JSON.stringify(bundle);
+}
+
+/** QR version 40 byte capacity is ~2.9k. Stay under that with margin. */
+export const PEER_SYNC_QR_MAX = 2200;
+
+export function peerSyncFitsQr(text: string): boolean {
+  return text.length > 0 && text.length <= PEER_SYNC_QR_MAX;
+}
+
+export function parsePeerSyncText(raw: string): unknown {
+  return JSON.parse(raw.trim());
+}
+
 export function downloadPeerSync(bundle: PeerSync) {
   const stamp = new Date(bundle.exportedAt).toISOString().slice(0, 10);
   triggerDownload(
     `wisp-sync-${stamp}.json`,
-    new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" }),
+    new Blob([encodePeerSync(bundle)], { type: "application/json" }),
   );
 }
