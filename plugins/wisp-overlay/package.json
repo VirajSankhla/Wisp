@@ -1,0 +1,17 @@
+{
+  "name": "wisp-overlay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Android edge overlay for Wisp — sits over other apps",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": ["android", "src"],
+  "capacitor": {
+    "android": {
+      "src": "android"
+    }
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=8.0.0"
+  }
+}

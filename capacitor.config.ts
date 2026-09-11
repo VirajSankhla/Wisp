@@ -7,6 +7,9 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: true,
   },
+  plugins: {
+    WispOverlay: {},
+  },
 };
 
 export default config;

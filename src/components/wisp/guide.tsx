@@ -102,8 +102,9 @@ export function WispGuide({ onBack }: { onBack: () => void }) {
                 Phone: swipe in from the right. Laptop: click the desk to tuck.
               </li>
               <li>
-                Connect another screen with a code or QR — never with Google or
-                X.
+                Phone and laptop do not sync by themselves. Pair with a QR
+                (the lock), then Send notes on one and Receive notes on the
+                other — copy, share, or a file.
               </li>
             </ul>
             {hasStarters ? (
@@ -136,23 +137,43 @@ export function WispGuide({ onBack }: { onBack: () => void }) {
               </p>
             </div>
             <div>
-              <p className="font-medium text-fg">Android</p>
+              <p className="font-medium text-fg">Android — over other apps</p>
               <p className="mt-1">
-                Chrome menu → Install app / Add to Home screen. It opens
-                full-screen and works offline.
+                Install the Wisp .apk (not the browser install). Open Wisp →
+                Devices → Enable edge tab. Android will ask “Display over other
+                apps.” Allow it. A tab then sits on the right edge of the whole
+                phone — home screen, Chrome, a game. Tap it. Swipe it away or
+                hide it from the notification.
               </p>
             </div>
             <div>
               <p className="font-medium text-fg">iPhone & iPad</p>
               <p className="mt-1">
-                Safari only: Share → Add to Home Screen. iOS does not allow a
-                third-party swipe-from-edge overlay or a sideloaded .ipa
-                without Apple’s store. The home-screen icon is the honest path.
+                Safari only: Share → Add to Home Screen. Apple does not let any
+                third-party app (Wisp included) float over Instagram, WhatsApp,
+                or a game the way a PC game bar does. The home-screen icon is
+                the honest iPhone path.
+              </p>
+            </div>
+            <div>
+              <p className="font-medium text-fg">Pop a note from anywhere (iPhone)</p>
+              <p className="mt-1">
+                The closest thing to a game overlay: Shortcuts → New Shortcut →
+                Open URLs → your Wisp address with <span className="text-fg">?new=1</span>{" "}
+                at the end. Then Settings → Accessibility → Touch → Back Tap →
+                Double Tap → that shortcut. Double-tap the back of the phone and
+                Wisp opens on a new heading.
               </p>
             </div>
             <p>
-              A classic .exe / .apk is a packaging step from the same project
-              (Tauri / Capacitor). See the README if you want those files.
+              On this screen, swipe in from the right or tap the droplet. iOS
+              steals the very last pixels of the edge, so the tab sits a little
+              inward on purpose.
+            </p>
+            <p>
+              A classic .exe / .apk is packaging from the same project. The
+              Android APK still cannot cover other apps until a native overlay
+              permission is added — that is not a PWA feature.
             </p>
           </div>
         ) : null}

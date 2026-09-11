@@ -1,31 +1,17 @@
 # Native shells
 
-The React UI is the product. Native wrappers only add an OS icon.
+The React UI is the product. Native wrappers add an OS icon — and on Android, an edge overlay over other apps.
 
-## Use it without compiling (recommended)
+## Android overlay (game-bar)
 
-Install from the browser. That produces a real app window on Windows, Mac,
-ChromeOS, and Android, and a home-screen icon on iPhone. See the README.
+Only the **.apk** can sit on top of other apps. A PWA / iPhone install cannot.
 
-## `.exe` / `.dmg` — Tauri (planned wrapper)
+1. Install `Wisp.apk`.
+2. Open Wisp → Devices → **Enable edge tab**.
+3. Allow **Display over other apps**.
+4. Leave Wisp. A tab stays on the right edge of the whole phone.
+5. Tap it to pull notes out. Hide it from the notification if you want it gone.
 
-```sh
-npm install -D @tauri-apps/cli
-npx tauri init
-npx tauri build
-```
+## `.exe` / `.apk`
 
-Ask for a **configurable data directory**. Never hard-code `D:\Wisp`.
-
-## `.apk` — Capacitor (planned wrapper)
-
-```sh
-npm install @capacitor/core @capacitor/cli @capacitor/android
-npx cap init Wisp com.wisp.notes --web-dir dist
-npx cap add android
-npx cap open android
-```
-
-## iOS
-
-Add to Home Screen from Safari. A public `.ipa` is not a free sideload.
+GitHub Actions (`.github/workflows/release-native.yml`) builds them.

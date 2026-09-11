@@ -47,6 +47,7 @@
     min-height: 100%;
     background: var(--color-bg);
     color: var(--color-fg);
+    overscroll-behavior: none;
   }
 
   h1,
@@ -92,6 +93,20 @@
   opacity: 0.2;
   mix-blend-mode: overlay;
   pointer-events: none;
+}
+
+.wisp-edge-rail {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(197 205 216 / 0.08) 100%
+  );
+}
+
+html.wisp-overlay-mode,
+html.wisp-overlay-mode body,
+html.wisp-overlay-mode #app {
+  background: transparent !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
