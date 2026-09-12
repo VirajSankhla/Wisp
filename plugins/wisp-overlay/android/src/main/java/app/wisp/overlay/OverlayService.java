@@ -17,14 +17,18 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
+import android.content.res.AssetManager;
+import android.webkit.MimeTypeMap;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.core.app.NotificationCompat;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class OverlayService extends Service {
     public static final String PREF = "wisp_overlay";
@@ -147,7 +151,7 @@ public class OverlayService extends Service {
         WebViewAssetLoader loader = new WebViewAssetLoader.Builder()
             .setDomain("localhost")
             .setHttpAllowed(false)
-            .addPathHandler("/", new WebViewAssetLoader.AssetsPathHandler(ctx, "public"))
+            .addPathHandler("/", new PublicAssetsHandler(ctx))
             .build();
 
         web.setWebViewClient(new WebViewClientCompat() {
@@ -260,5 +264,63 @@ public class OverlayService extends Service {
             .addAction(0, "Hide", stopPi)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build();
+    }
+
+    /** Capacitor copies the web app to assets/public. Map / → that folder. */
+    private static final class PublicAssetsHandler implements WebViewAssetLoader.PathHandler {
+        private final AssetManager assets;
+
+        PublicAssetsHandler(Context ctx) {
+            this.assets = ctx.getAssets();
+        }
+
+        @Override
+        public WebResourceResponse handle(String path) {
+            String rel = path == null ? "" : path;
+            if (rel.startsWith("/")) rel = rel.substring(1);
+            if (rel.isEmpty() || rel.endsWith("/")) rel = rel + "index.html";
+            try {
+                InputStream stream = assets.open("public/" + rel);
+                return new WebResourceResponse(mime(rel), "utf-8", stream);
+            } catch (IOException missing) {
+                if (rel.contains(".")) return null;
+                try {
+                    return new WebResourceResponse(
+                        "text/html",
+                        "utf-8",
+                        assets.open("public/index.html")
+                    );
+                } catch (IOException ignored) {
+                    return null;
+                }
+            }
+        }
+
+        private static String mime(String rel) {
+            String ext = MimeTypeMap.getFileExtensionFromUrl(rel);
+            if (ext == null) ext = "";
+            switch (ext) {
+                case "js":
+                case "mjs":
+                    return "application/javascript";
+                case "css":
+                    return "text/css";
+                case "svg":
+                    return "image/svg+xml";
+                case "json":
+                    return "application/json";
+                case "html":
+                    return "text/html";
+                case "png":
+                    return "image/png";
+                case "webp":
+                    return "image/webp";
+                case "woff2":
+                    return "font/woff2";
+                default:
+                    String guessed = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+                    return guessed != null ? guessed : "application/octet-stream";
+            }
+        }
     }
 }
