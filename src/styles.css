@@ -109,6 +109,10 @@ html.wisp-overlay-mode #app {
   background: transparent !important;
 }
 
+html.wisp-overlay-mode body {
+  background: transparent !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wisp-shimmer {
     animation: none;

@@ -7,6 +7,7 @@ import { useNotesStore } from "@/lib/notes/store";
 import { cn } from "@/lib/utils";
 import { DesktopScene } from "./desktop-scene";
 import { WispMark } from "./mark";
+import { OverlaySheet } from "./overlay-sheet";
 import { WispPanel } from "./panel";
 
 function isTypingTarget(el: EventTarget | null) {
@@ -208,14 +209,20 @@ export function WispApp() {
       <aside
         className={cn(
           "wisp-panel absolute inset-y-0 right-0 z-20 flex w-full flex-col md:w-panel",
-          "p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))]",
+          overlayMode
+            ? "p-0"
+            : "p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pr-[max(0.5rem,env(safe-area-inset-right))] pb-[max(0.5rem,env(safe-area-inset-bottom))]",
           "transition-transform duration-300 ease-smooth",
           overlayMode || panelOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
-        <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl bg-bg-panel shadow-panel backdrop-blur-xl">
-          <WispPanel searchRef={searchRef} />
-        </div>
+        {overlayMode ? (
+          <OverlaySheet />
+        ) : (
+          <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl bg-bg-panel shadow-panel backdrop-blur-xl">
+            <WispPanel searchRef={searchRef} />
+          </div>
+        )}
       </aside>
     </div>
   );

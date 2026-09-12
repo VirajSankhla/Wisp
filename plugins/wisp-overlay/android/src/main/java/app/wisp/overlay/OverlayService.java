@@ -13,8 +13,8 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.IBinder;
 import android.provider.Settings;
-import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.content.res.AssetManager;
@@ -22,8 +22,8 @@ import android.webkit.MimeTypeMap;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import androidx.core.app.NotificationCompat;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
@@ -33,6 +33,8 @@ import java.io.InputStream;
 public class OverlayService extends Service {
     public static final String PREF = "wisp_overlay";
     public static final String PREF_ENABLED = "enabled";
+    public static final String PREF_PEEK = "peek";
+    public static final String PREF_Y = "y";
     public static final String ACTION_STOP = "app.wisp.overlay.STOP";
 
     private static final String CHANNEL = "wisp-edge";
@@ -42,7 +44,15 @@ public class OverlayService extends Service {
     private WindowManager windowManager;
     private View handleView;
     private View panelView;
+    private ImageView dropView;
+    private View nubView;
     private boolean expanded = false;
+    private boolean peeked = false;
+    private int handleY = 0;
+    private float downRawX;
+    private float downRawY;
+    private int downY;
+    private boolean moved;
 
     public static boolean isRunning() {
         return running;
@@ -63,6 +73,8 @@ public class OverlayService extends Service {
             stopSelf();
             return;
         }
+        peeked = getSharedPreferences(PREF, MODE_PRIVATE).getBoolean(PREF_PEEK, false);
+        handleY = getSharedPreferences(PREF, MODE_PRIVATE).getInt(PREF_Y, -1);
         showHandle();
     }
 
@@ -104,43 +116,144 @@ public class OverlayService extends Service {
 
     private void showHandle() {
         if (handleView != null) return;
-        LinearLayout pill = new LinearLayout(this);
-        pill.setOrientation(LinearLayout.VERTICAL);
-        pill.setGravity(Gravity.CENTER_HORIZONTAL);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0xF01C1A17);
-        bg.setCornerRadii(new float[] { dp(18), dp(18), 0, 0, 0, 0, dp(18), dp(18) });
-        pill.setBackground(bg);
-        pill.setPadding(0, dp(8), 0, dp(8));
+        FrameLayout bubble = new FrameLayout(this);
+        dropView = new ImageView(this);
+        dropView.setImageResource(R.drawable.wisp_drop);
+        dropView.setPadding(dp(11), dp(11), dp(11), dp(11));
+        bubble.addView(
+            dropView,
+            new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        );
+        nubView = new View(this);
+        GradientDrawable line = new GradientDrawable();
+        line.setColor(0xD9C5CDD8);
+        line.setCornerRadii(new float[] { dp(4), dp(4), 0, 0, 0, 0, dp(4), dp(4) });
+        nubView.setBackground(line);
+        FrameLayout.LayoutParams nubLp = new FrameLayout.LayoutParams(dp(5), dp(36));
+        nubLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
+        bubble.addView(nubView, nubLp);
+        bubble.setOnTouchListener(this::onHandleTouch);
+        handleView = bubble;
+        if (handleY < 0) {
+            handleY = Math.max(dp(80), screenH() / 2 - dp(22));
+        }
+        applyHandleLayout();
+        windowManager.addView(handleView, handleParams());
+    }
 
-        TextView plus = label("＋", 18);
-        plus.setOnClickListener(v -> expand(true));
-        TextView mark = label("W", 20);
-        mark.setOnClickListener(v -> expand(false));
-        TextView hint = label("notes", 10);
-        hint.setTextColor(0xFF6F6A62);
-        hint.setOnClickListener(v -> expand(false));
+    private boolean onHandleTouch(View view, MotionEvent event) {
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                downRawX = event.getRawX();
+                downRawY = event.getRawY();
+                downY = handleY;
+                moved = false;
+                return true;
+            case MotionEvent.ACTION_MOVE: {
+                float dx = event.getRawX() - downRawX;
+                float dy = event.getRawY() - downRawY;
+                if (Math.abs(dx) + Math.abs(dy) > dp(6)) moved = true;
+                handleY = clampY(downY + (int) dy);
+                if (!peeked && dx > dp(28)) {
+                    peeked = true;
+                    persistHandle();
+                } else if (peeked && dx < -dp(22)) {
+                    peeked = false;
+                    persistHandle();
+                }
+                windowManager.updateViewLayout(handleView, handleParams());
+                return true;
+            }
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                if (!moved) {
+                    if (peeked) {
+                        peeked = false;
+                        persistHandle();
+                        windowManager.updateViewLayout(handleView, handleParams());
+                    } else {
+                        expand(false);
+                    }
+                } else {
+                    persistHandle();
+                    windowManager.updateViewLayout(handleView, handleParams());
+                }
+                return true;
+            default:
+                return false;
+        }
+    }
 
-        pill.addView(plus);
-        pill.addView(mark);
-        pill.addView(hint);
+    private void persistHandle() {
+        getSharedPreferences(PREF, MODE_PRIVATE)
+            .edit()
+            .putBoolean(PREF_PEEK, peeked)
+            .putInt(PREF_Y, handleY)
+            .apply();
+    }
 
+    private void applyHandleLayout() {
+        if (handleView == null) return;
+        FrameLayout bubble = (FrameLayout) handleView;
+        bubble.setBackgroundColor(Color.TRANSPARENT);
+        if (peeked) {
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(Color.TRANSPARENT);
+            bubble.setBackground(circle);
+            if (dropView != null) dropView.setVisibility(View.INVISIBLE);
+            if (nubView != null) nubView.setVisibility(View.VISIBLE);
+        } else {
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(0xF01C1A17);
+            circle.setStroke(dp(1), 0x44F3EFE7);
+            bubble.setBackground(circle);
+            if (dropView != null) dropView.setVisibility(View.VISIBLE);
+            if (nubView != null) nubView.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private WindowManager.LayoutParams handleParams() {
+        applyHandleLayout();
         WindowManager.LayoutParams params = baseParams();
-        params.width = dp(48);
-        params.height = WindowManager.LayoutParams.WRAP_CONTENT;
-        params.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
+        if (peeked) {
+            params.width = dp(22);
+            params.height = dp(52);
+            params.x = 0;
+        } else {
+            params.width = dp(44);
+            params.height = dp(44);
+            params.x = dp(8);
+        }
+        params.gravity = Gravity.TOP | Gravity.END;
+        params.y = handleY;
         params.flags =
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
-        handleView = pill;
-        windowManager.addView(handleView, params);
+        return params;
+    }
+
+    private int screenH() {
+        return getResources().getDisplayMetrics().heightPixels;
+    }
+
+    private int clampY(int y) {
+        int max = Math.max(dp(24), screenH() - dp(80));
+        if (y < dp(24)) return dp(24);
+        if (y > max) return max;
+        return y;
     }
 
     private void showPanel(boolean freshNote) {
         Context ctx = getApplicationContext();
         WebView web = new WebView(ctx);
         web.setBackgroundColor(Color.TRANSPARENT);
+        web.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -173,16 +286,17 @@ public class OverlayService extends Service {
         web.loadUrl("https://localhost" + path);
 
         WindowManager.LayoutParams params = baseParams();
-        params.width = dp(400);
-        params.height = WindowManager.LayoutParams.MATCH_PARENT;
-        params.gravity = Gravity.END | Gravity.TOP;
+        params.width = dp(300);
+        params.height = Math.min(dp(520), (int) (screenH() * 0.56f));
+        params.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
+        params.x = dp(8);
         params.flags =
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
             WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
         panelView = web;
         web.setOnTouchListener((v, event) -> {
-            if (event.getAction() == android.view.MotionEvent.ACTION_OUTSIDE) {
+            if (event.getAction() == MotionEvent.ACTION_OUTSIDE) {
                 collapse();
                 return true;
             }
@@ -211,16 +325,6 @@ public class OverlayService extends Service {
         try {
             windowManager.removeView(view);
         } catch (Exception ignored) {}
-    }
-
-    private TextView label(String text, int sp) {
-        TextView view = new TextView(this);
-        view.setText(text);
-        view.setTextColor(0xFFC5CDD8);
-        view.setGravity(Gravity.CENTER);
-        view.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
-        view.setPadding(dp(4), dp(10), dp(4), dp(10));
-        return view;
     }
 
     private int dp(int value) {
