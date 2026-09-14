@@ -50,7 +50,6 @@ public class OverlayService extends Service {
     private boolean peeked = false;
     private int handleY = 0;
     private final SyncServer syncServer = new SyncServer();
-    private int handleY = 0;
     private float downRawX;
     private float downRawY;
     private int downY;
