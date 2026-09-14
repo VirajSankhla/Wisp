@@ -16,4 +16,24 @@ public class WispNativeBridge {
     public void collapse() {
         main.post(service::collapse);
     }
+
+    @JavascriptInterface
+    public void resize(int width, int height) {
+        main.post(() -> service.resizePanel(width, height));
+    }
+
+    @JavascriptInterface
+    public void publishSnapshot(String json) {
+        OverlayHub.publish(json);
+    }
+
+    @JavascriptInterface
+    public String takeIncoming() {
+        return OverlayHub.takeIncoming();
+    }
+
+    @JavascriptInterface
+    public String localAddress() {
+        return OverlayHub.ipv4();
+    }
 }

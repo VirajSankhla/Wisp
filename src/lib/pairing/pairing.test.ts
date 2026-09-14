@@ -22,6 +22,7 @@ describe("connection codes", () => {
     const offer = mintConnectionCode(1_000, 5_000);
     const parsed = parseConnectionCode(offer.code, 2_000);
     assert.equal(parsed.secret.length, 48);
+    assert.equal(parsed.lan, undefined);
     assert.throws(() => parseConnectionCode(offer.code, 20_000), /expired/);
   });
 
@@ -36,5 +37,18 @@ describe("connection codes", () => {
   it("rejects garbage and does not treat the code as a login", () => {
     assert.throws(() => parseConnectionCode("google-oauth-token"), /not a Wisp/);
     assert.throws(() => parseConnectionCode("WISP.????"), /damaged|not a Wisp/);
+  });
+
+  it("can carry a Wi-Fi address for auto-update", () => {
+    const offer = mintConnectionCode();
+    const code = encodeConnectionCode(offer.secret, Date.now(), 60_000, {
+      host: "192.168.1.20",
+      port: 17892,
+    });
+    const parsed = parseConnectionCode(code);
+    assert.deepEqual(parsed.secret, offer.secret);
+    assert.deepEqual(parsed.lan, { host: "192.168.1.20", port: 17892 });
+    assert.equal(code.length <= 100, true);
+    assert.equal(isConnectionCodeShape(code), true);
   });
 });

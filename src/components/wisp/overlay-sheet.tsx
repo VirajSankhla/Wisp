@@ -1,19 +1,33 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Plus, X } from "lucide-react";
-import { collapseNativeOverlay } from "@/lib/overlay";
+import { collapseNativeOverlay, reportOverlaySize } from "@/lib/overlay";
 import { visibleNotes } from "@/lib/notes/search";
 import { useNotesStore } from "@/lib/notes/store";
 import { cn } from "@/lib/utils";
 import { WispMark } from "./mark";
 
+const bubble =
+  "rounded-[22px] bg-black/45 text-fg shadow-[0_8px_24px_-12px_rgb(0_0_0_/_0.55)] ring-1 ring-white/16 backdrop-blur-2xl";
+
 export function OverlaySheet() {
+  const rootRef = useRef<HTMLDivElement>(null);
   const notes = useNotesStore((s) => s.notes);
   const selectedId = useNotesStore((s) => s.selectedId);
   const hasHydrated = useNotesStore((s) => s.hasHydrated);
   const selected = selectedId ? notes[selectedId] : undefined;
-  const list = useMemo(() => visibleNotes(notes, "", null), [notes]);
+  const list = useMemo(() => visibleNotes(notes, "", null).slice(0, 12), [notes]);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const send = () => reportOverlaySize(el);
+    send();
+    const ro = new ResizeObserver(send);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [selectedId, list.length, hasHydrated]);
 
   function close() {
     useNotesStore.getState().setSelectedId(null);
@@ -21,85 +35,76 @@ export function OverlaySheet() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col p-1">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[28px] bg-[#12110f]/42 shadow-[0_18px_50px_-18px_rgb(0_0_0_/_0.55)] ring-1 ring-white/14 backdrop-blur-2xl">
-        <header className="flex items-center gap-1 px-2 pt-2 pb-1">
-          <button
-            type="button"
-            onClick={close}
-            aria-label="Hide Wisp"
-            className="grid size-9 place-items-center rounded-full text-muted hover:bg-fg/8 hover:text-fg"
-          >
-            <X className="size-4" />
-          </button>
-          <WispMark className="size-4 text-accent" />
-          <span className="flex-1" />
-          <button
-            type="button"
-            onClick={() => useNotesStore.getState().createNote()}
-            aria-label="New note"
-            className="grid size-9 place-items-center rounded-full text-accent hover:bg-fg/8"
-          >
-            <Plus className="size-4" />
-          </button>
-        </header>
+    <div
+      ref={rootRef}
+      className="flex w-fit max-w-[280px] flex-col items-end gap-2 px-2 py-2"
+    >
+      <div className={cn(bubble, "flex items-center gap-0.5 px-1 py-0.5")}>
+        <button
+          type="button"
+          onClick={close}
+          aria-label="Hide Wisp"
+          className="grid size-8 place-items-center rounded-full text-muted hover:text-fg"
+        >
+          <X className="size-3.5" />
+        </button>
+        <WispMark className="mx-1 size-3.5 text-accent" />
+        <button
+          type="button"
+          onClick={() => useNotesStore.getState().createNote()}
+          aria-label="New note"
+          className="grid size-8 place-items-center rounded-full text-accent"
+        >
+          <Plus className="size-3.5" />
+        </button>
+      </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
-          {!hasHydrated ? (
-            <div className="space-y-2 px-3 py-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-9 overflow-hidden rounded-lg bg-fg/8">
-                  <div className="wisp-shimmer h-full w-full" />
-                </div>
-              ))}
-            </div>
-          ) : selected && !selected.deletedAt ? (
-            <OverlayNote
-              heading={selected.heading}
-              body={selected.body}
-              onHeading={(heading) =>
-                useNotesStore.getState().updateNote(selected.id, { heading })
-              }
-              onBody={(body) =>
-                useNotesStore.getState().updateNote(selected.id, { body })
-              }
-              onBack={() => useNotesStore.getState().setSelectedId(null)}
-            />
-          ) : (
-            <ul className="px-1">
-              {list.length === 0 ? (
-                <li className="px-3 py-8 text-center text-sm text-muted">
-                  Empty. Tap + for a heading.
-                </li>
-              ) : (
-                list.map((note) => {
-                  const heading = note.heading.trim() || "Untitled";
-                  return (
-                    <li key={note.id}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          useNotesStore.getState().setSelectedId(note.id)
-                        }
-                        className="flex w-full items-center rounded-2xl px-3 py-2.5 text-left hover:bg-fg/8"
-                      >
-                        <span
-                          className={cn(
-                            "truncate font-display text-[17px] leading-snug tracking-tight",
-                            note.heading.trim() ? "text-fg" : "italic text-muted",
-                          )}
-                        >
-                          {heading}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })
+      {!hasHydrated ? (
+        <div className={cn(bubble, "h-10 w-36")} />
+      ) : selected && !selected.deletedAt ? (
+        <OverlayNote
+          heading={selected.heading}
+          body={selected.body}
+          onHeading={(heading) =>
+            useNotesStore.getState().updateNote(selected.id, { heading })
+          }
+          onBody={(body) =>
+            useNotesStore.getState().updateNote(selected.id, { body })
+          }
+          onBack={() => useNotesStore.getState().setSelectedId(null)}
+        />
+      ) : (
+        <div className="flex max-h-[46vh] w-fit max-w-[280px] flex-col items-end gap-1.5 overflow-y-auto">
+          {list.length === 0 ? (
+            <div
+              className={cn(
+                bubble,
+                "px-3.5 py-2 font-display text-[15px] text-muted",
               )}
-            </ul>
+            >
+              Empty — tap +
+            </div>
+          ) : (
+            list.map((note) => {
+              const heading = note.heading.trim() || "Untitled";
+              return (
+                <button
+                  key={note.id}
+                  type="button"
+                  onClick={() => useNotesStore.getState().setSelectedId(note.id)}
+                  className={cn(
+                    bubble,
+                    "max-w-[260px] px-3.5 py-2 text-left font-display text-[16px] leading-snug tracking-tight",
+                    note.heading.trim() ? "" : "italic text-muted",
+                  )}
+                >
+                  {heading}
+                </button>
+              );
+            })
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -118,11 +123,11 @@ function OverlayNote({
   onBack: () => void;
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col px-3 pb-2">
+    <div className="flex w-[260px] max-w-[260px] flex-col items-end gap-1.5">
       <button
         type="button"
         onClick={onBack}
-        className="mb-1 self-start rounded-full px-2 py-1 text-xs text-muted hover:text-fg"
+        className={cn(bubble, "px-3 py-1 text-xs text-muted")}
       >
         Headings
       </button>
@@ -131,13 +136,20 @@ function OverlayNote({
         onChange={(e) => onHeading(e.target.value)}
         placeholder="Heading"
         rows={1}
-        className="min-h-10 w-full resize-none bg-transparent font-display text-xl leading-tight text-fg placeholder:text-muted/70 focus:outline-none"
+        className={cn(
+          bubble,
+          "w-full resize-none px-3.5 py-2.5 font-display text-[18px] leading-snug placeholder:text-muted/70 focus:outline-none",
+        )}
       />
       <textarea
         value={body}
         onChange={(e) => onBody(e.target.value)}
         placeholder="Write…"
-        className="mt-2 min-h-0 flex-1 resize-none bg-transparent text-[15px] leading-relaxed text-fg/90 placeholder:text-subtle focus:outline-none"
+        rows={Math.min(8, Math.max(2, body.split("\n").length + 1))}
+        className={cn(
+          bubble,
+          "w-full resize-none px-3.5 py-2.5 text-[15px] leading-relaxed text-fg/90 placeholder:text-subtle focus:outline-none",
+        )}
       />
     </div>
   );

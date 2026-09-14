@@ -69,4 +69,24 @@ public class WispOverlayPlugin extends Plugin {
         ret.put("value", OverlayService.isRunning());
         call.resolve(ret);
     }
+
+    @PluginMethod
+    public void localAddress(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("value", OverlayHub.ipv4());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void publishSnapshot(PluginCall call) {
+        OverlayHub.publish(call.getString("json", ""));
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void takeIncoming(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("value", OverlayHub.takeIncoming());
+        call.resolve(ret);
+    }
 }

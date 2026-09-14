@@ -5,6 +5,7 @@ import { Check, ChevronLeft, Copy, QrCode, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { AndroidOverlayCard } from "@/components/wisp/android-overlay";
 import { Button } from "@/components/ui/button";
+import { lanAddress } from "@/lib/overlay";
 import { useNotesStore } from "@/lib/notes/store";
 import {
   encodeConnectionCode,
@@ -12,6 +13,7 @@ import {
   parseConnectionCode,
   PairingError,
 } from "@/lib/pairing/codes";
+import { HUB_PORT, clearLanPeer, loadLanPeer, saveLanPeer } from "@/lib/pairing/lan";
 import { pairingQrSvg } from "@/lib/pairing/qr";
 import {
   buildPeerSync,
@@ -41,10 +43,15 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
   const [packetQr, setPacketQr] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [hubAddr, setHubAddr] = useState("");
+  const [peerHost, setPeerHost] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setConnected(hasVault());
+    const peer = loadLanPeer();
+    if (peer) setPeerHost(peer.host);
+    void lanAddress().then(setHubAddr);
   }, []);
 
   async function showCode() {
@@ -59,7 +66,14 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
       await saveVaultFromSecret(secret);
       setConnected(true);
     }
-    const next = encodeConnectionCode(secret);
+    const addr = hubAddr || (await lanAddress());
+    if (addr) setHubAddr(addr);
+    const next = encodeConnectionCode(
+      secret,
+      Date.now(),
+      undefined,
+      addr ? { host: addr, port: HUB_PORT } : undefined,
+    );
     setCode(next);
     setQrSvg(pairingQrSvg(next));
     setCopied(false);
@@ -81,9 +95,18 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
     try {
       const parsed = parseConnectionCode(paste);
       await saveVaultFromSecret(parsed.secret);
+      const vault = loadVault();
+      if (parsed.lan && vault) {
+        saveLanPeer({ ...parsed.lan, vaultId: vault.id });
+        setPeerHost(parsed.lan.host);
+      }
       setConnected(true);
       setMode("home");
-      toast("Same lock. Now send notes from the other device.");
+      toast(
+        parsed.lan
+          ? "Connected. On this Wi-Fi, notes keep matching."
+          : "Same lock. Stay on this Wi-Fi with the phone’s edge tab on.",
+      );
     } catch (err) {
       setError(err instanceof PairingError ? err.message : "Could not use that code");
     }
@@ -179,24 +202,26 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
         {mode === "home" ? (
           <div className="space-y-5">
             <p className="text-fg">
-              There is no cloud in the middle. The QR is a lock. Notes still
-              travel as a packet you copy, share, or save.
+              Scan once. Same Wi-Fi, with the phone’s edge tab on: notes keep
+              matching. No account. No cloud.
             </p>
             <AndroidOverlayCard />
             <ol className="list-decimal space-y-2 pl-5 text-fg">
               <li>
-                <span className="font-medium">Same lock, once.</span> Show a
-                code here, paste it on the other device (5 minutes).
+                <span className="font-medium">Show the code on the phone.</span>{" "}
+                Paste or scan it on the computer within 5 minutes.
               </li>
               <li>
-                <span className="font-medium">Send notes, whenever.</span> Copy
-                the packet on the device that has the latest notes. Paste or
-                open it on the other.
+                <span className="font-medium">Stay on this Wi-Fi.</span> Edits
+                move by themselves while the edge tab is alive. Different
+                networks still use Send notes.
               </li>
             </ol>
             {connected ? (
               <p className="text-xs text-subtle">
-                This device has the lock{vault ? ` · ${vault.id}` : ""}.
+                This device has the lock{vault ? ` · ${vault.id}` : ""}
+                {hubAddr ? ` · Wi-Fi ${hubAddr}` : ""}
+                {peerHost ? ` · talking to ${peerHost}` : ""}.
               </p>
             ) : (
               <p className="text-xs text-subtle">No lock on this device yet.</p>
@@ -220,13 +245,41 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
                 1. Enter a code
               </Button>
             </div>
+            {connected && !hubAddr ? (
+              <div className="space-y-2">
+                <p className="text-xs">
+                  If this screen did not come from the phone’s QR, type the
+                  phone’s Wi-Fi address shown under Devices there.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    value={peerHost}
+                    onChange={(e) => setPeerHost(e.target.value)}
+                    placeholder="192.168.…"
+                    className="h-9 flex-1 rounded-xl bg-fg/6 px-3 font-mono text-xs text-fg placeholder:text-subtle focus:outline-none"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const vault = loadVault();
+                      const host = peerHost.trim();
+                      if (!vault || !host) return;
+                      saveLanPeer({ host, port: HUB_PORT, vaultId: vault.id });
+                      toast("Will keep matching that phone on this Wi-Fi");
+                    }}
+                  >
+                    Use
+                  </Button>
+                </div>
+              </div>
+            ) : null}
             {connected ? (
               <div className="space-y-3 rounded-2xl bg-fg/4 px-3 py-3">
-                <p className="text-fg">2. Move notes</p>
+                <p className="text-fg">If you are not on the same Wi-Fi</p>
                 <p>
-                  WhatsApp, AirDrop, USB, email-to-self, or a file — anything
-                  that gets the packet to the other screen. Wisp never phones
-                  home.
+                  Send an encrypted packet. Same lock still required.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" size="sm" onClick={() => void prepareSend()}>
@@ -250,7 +303,9 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
                   className="text-xs text-subtle hover:text-fg"
                   onClick={() => {
                     clearVault();
+                    clearLanPeer();
                     setConnected(false);
+                    setPeerHost("");
                     toast("Lock forgotten on this device");
                   }}
                 >
@@ -264,8 +319,9 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
         {mode === "offer" ? (
           <div className="space-y-4">
             <p className="text-fg">
-              This QR is only the lock — it does not contain your notes. Paste
-              the code on the other device within 5 minutes.
+              Scan this on the other device within 5 minutes. Show it from the
+              phone with the edge tab on — then both sides keep matching on
+              this Wi-Fi.
             </p>
             <div
               className="mx-auto max-w-56 overflow-hidden rounded-2xl"
@@ -284,8 +340,8 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
               </Button>
             </div>
             <p>
-              Then come back here → Send notes. On the other device → Receive
-              notes.
+              Keep the edge tab on. Same Wi-Fi does the rest. Packet send is
+              only if you leave the network.
             </p>
           </div>
         ) : null}

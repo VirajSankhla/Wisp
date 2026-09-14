@@ -3,6 +3,7 @@
 import { useEffect, useRef, type TouchEvent } from "react";
 import { Plus } from "lucide-react";
 import { collapseNativeOverlay } from "@/lib/overlay";
+import { startLanSync } from "@/lib/pairing/lan";
 import { useNotesStore } from "@/lib/notes/store";
 import { cn } from "@/lib/utils";
 import { DesktopScene } from "./desktop-scene";
@@ -61,6 +62,11 @@ export function WispApp() {
     });
     void useNotesStore.persist.rehydrate();
     return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    return startLanSync();
   }, []);
 
   useEffect(() => {
@@ -133,6 +139,14 @@ export function WispApp() {
       useNotesStore.getState().setPanelOpen(false);
       collapseNativeOverlay();
     }
+  }
+
+  if (overlayMode) {
+    return (
+      <div className="bg-transparent text-fg overscroll-none">
+        <OverlaySheet />
+      </div>
+    );
   }
 
   return (

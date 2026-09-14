@@ -49,6 +49,8 @@ public class OverlayService extends Service {
     private boolean expanded = false;
     private boolean peeked = false;
     private int handleY = 0;
+    private final SyncServer syncServer = new SyncServer();
+    private int handleY = 0;
     private float downRawX;
     private float downRawY;
     private int downY;
@@ -75,6 +77,7 @@ public class OverlayService extends Service {
         }
         peeked = getSharedPreferences(PREF, MODE_PRIVATE).getBoolean(PREF_PEEK, false);
         handleY = getSharedPreferences(PREF, MODE_PRIVATE).getInt(PREF_Y, -1);
+        syncServer.start();
         showHandle();
     }
 
@@ -91,11 +94,27 @@ public class OverlayService extends Service {
     @Override
     public void onDestroy() {
         running = false;
+        syncServer.stop();
         detach(handleView);
         detach(panelView);
         handleView = null;
         panelView = null;
         super.onDestroy();
+    }
+
+    public void resizePanel(int cssWidth, int cssHeight) {
+        if (!expanded || panelView == null || windowManager == null) return;
+        float density = getResources().getDisplayMetrics().density;
+        int w = Math.max(dp(160), Math.round(cssWidth * density) + dp(4));
+        int h = Math.max(dp(56), Math.round(cssHeight * density) + dp(4));
+        int maxH = (int) (screenH() * 0.7f);
+        if (h > maxH) h = maxH;
+        WindowManager.LayoutParams params = (WindowManager.LayoutParams) panelView.getLayoutParams();
+        params.width = w;
+        params.height = h;
+        try {
+            windowManager.updateViewLayout(panelView, params);
+        } catch (Exception ignored) {}
     }
 
     public void collapse() {
@@ -286,10 +305,11 @@ public class OverlayService extends Service {
         web.loadUrl("https://localhost" + path);
 
         WindowManager.LayoutParams params = baseParams();
-        params.width = dp(300);
-        params.height = Math.min(dp(520), (int) (screenH() * 0.56f));
-        params.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
+        params.width = dp(220);
+        params.height = dp(72);
+        params.gravity = Gravity.TOP | Gravity.END;
         params.x = dp(8);
+        params.y = Math.max(dp(48), handleY - dp(8));
         params.flags =
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
