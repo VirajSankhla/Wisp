@@ -5,7 +5,6 @@ import { Check, ChevronLeft, Copy, QrCode, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { AndroidOverlayCard } from "@/components/wisp/android-overlay";
 import { Button } from "@/components/ui/button";
-import { lanAddress } from "@/lib/overlay";
 import { useNotesStore } from "@/lib/notes/store";
 import {
   encodeConnectionCode,
@@ -13,8 +12,14 @@ import {
   parseConnectionCode,
   PairingError,
 } from "@/lib/pairing/codes";
-import { HUB_PORT, clearLanPeer, loadLanPeer, saveLanPeer } from "@/lib/pairing/lan";
+import { encodeInvite, isInviteShape, parseInvite } from "@/lib/pairing/invite";
 import { pairingQrSvg } from "@/lib/pairing/qr";
+import {
+  clearRemote,
+  loadRemote,
+  saveRemote,
+  validateRemoteUrl,
+} from "@/lib/pairing/remote";
 import {
   buildPeerSync,
   downloadPeerSync,
@@ -43,16 +48,25 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
   const [packetQr, setPacketQr] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [hubAddr, setHubAddr] = useState("");
-  const [peerHost, setPeerHost] = useState("");
+  const [apiUrl, setApiUrl] = useState("");
+  const [apiHeader, setApiHeader] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setConnected(hasVault());
-    const peer = loadLanPeer();
-    if (peer) setPeerHost(peer.host);
-    void lanAddress().then(setHubAddr);
+    const remote = loadRemote();
+    if (remote) {
+      setApiUrl(remote.url);
+      setApiHeader(remote.header);
+    }
   }, []);
+
+  function persistApi() {
+    const url = validateRemoteUrl(apiUrl);
+    saveRemote({ url, header: apiHeader });
+    setApiUrl(url);
+    return { url, header: apiHeader.trim() };
+  }
 
   async function showCode() {
     setError(null);
@@ -66,14 +80,13 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
       await saveVaultFromSecret(secret);
       setConnected(true);
     }
-    const addr = hubAddr || (await lanAddress());
-    if (addr) setHubAddr(addr);
-    const next = encodeConnectionCode(
-      secret,
-      Date.now(),
-      undefined,
-      addr ? { host: addr, port: HUB_PORT } : undefined,
-    );
+    let next: string;
+    try {
+      const remote = persistApi();
+      next = encodeInvite(secret, remote);
+    } catch {
+      next = encodeConnectionCode(secret);
+    }
     setCode(next);
     setQrSvg(pairingQrSvg(next));
     setCopied(false);
@@ -93,20 +106,29 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
   async function enterCode() {
     setError(null);
     try {
+      if (isInviteShape(paste)) {
+        const parsed = parseInvite(paste);
+        await saveVaultFromSecret(parsed.secret);
+        saveRemote(parsed.remote);
+        setApiUrl(parsed.remote.url);
+        setApiHeader(parsed.remote.header);
+        setConnected(true);
+        setMode("home");
+        toast("Connected. Both sides will pull from that API.");
+        return;
+      }
       const parsed = parseConnectionCode(paste);
       await saveVaultFromSecret(parsed.secret);
-      const vault = loadVault();
-      if (parsed.lan && vault) {
-        saveLanPeer({ ...parsed.lan, vaultId: vault.id });
-        setPeerHost(parsed.lan.host);
+      if (apiUrl.trim()) {
+        try {
+          persistApi();
+        } catch {
+          /* lock still saved */
+        }
       }
       setConnected(true);
       setMode("home");
-      toast(
-        parsed.lan
-          ? "Connected. On this Wi-Fi, notes keep matching."
-          : "Same lock. Stay on this Wi-Fi with the phone’s edge tab on.",
-      );
+      toast("Same lock. Add the API URL on this device if you have not.");
     } catch (err) {
       setError(err instanceof PairingError ? err.message : "Could not use that code");
     }
@@ -202,26 +224,61 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
         {mode === "home" ? (
           <div className="space-y-5">
             <p className="text-fg">
-              Scan once. Same Wi-Fi, with the phone’s edge tab on: notes keep
-              matching. No account. No cloud.
+              Paste your own API on one device, then show a QR. The other
+              device gets the lock and that URL. Notes stay encrypted; the API
+              only stores the sealed blob. No Wisp cloud. Works over mobile
+              data.
             </p>
             <AndroidOverlayCard />
+            <div className="space-y-2">
+              <label className="text-xs text-subtle">API URL (GET + PUT JSON)</label>
+              <input
+                value={apiUrl}
+                onChange={(e) => setApiUrl(e.target.value)}
+                placeholder="https://api.jsonbin.io/v3/b/…"
+                className="h-9 w-full rounded-xl bg-fg/6 px-3 font-mono text-xs text-fg placeholder:text-subtle focus:outline-none"
+              />
+              <label className="text-xs text-subtle">Optional header</label>
+              <input
+                value={apiHeader}
+                onChange={(e) => setApiHeader(e.target.value)}
+                placeholder="X-Master-Key: …"
+                className="h-9 w-full rounded-xl bg-fg/6 px-3 font-mono text-xs text-fg placeholder:text-subtle focus:outline-none"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  try {
+                    persistApi();
+                    toast("API saved on this device");
+                  } catch (err) {
+                    toast(err instanceof Error ? err.message : "Could not save API");
+                  }
+                }}
+              >
+                Save API
+              </Button>
+              <p className="text-xs text-subtle">
+                Any host that accepts GET and PUT of JSON works — JSONBin, a
+                gist with a token, your own server.
+              </p>
+            </div>
             <ol className="list-decimal space-y-2 pl-5 text-fg">
               <li>
-                <span className="font-medium">Show the code on the phone.</span>{" "}
-                Paste or scan it on the computer within 5 minutes.
+                <span className="font-medium">Save the API</span> on this
+                device (or paste it on both).
               </li>
               <li>
-                <span className="font-medium">Stay on this Wi-Fi.</span> Edits
-                move by themselves while the edge tab is alive. Different
-                networks still use Send notes.
+                <span className="font-medium">Show a QR</span> so the other
+                device gets the lock and the URL in one scan.
               </li>
             </ol>
             {connected ? (
               <p className="text-xs text-subtle">
                 This device has the lock{vault ? ` · ${vault.id}` : ""}
-                {hubAddr ? ` · Wi-Fi ${hubAddr}` : ""}
-                {peerHost ? ` · talking to ${peerHost}` : ""}.
+                {apiUrl ? " · API saved" : " · no API yet"}.
               </p>
             ) : (
               <p className="text-xs text-subtle">No lock on this device yet.</p>
@@ -245,39 +302,9 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
                 1. Enter a code
               </Button>
             </div>
-            {connected && !hubAddr ? (
-              <div className="space-y-2">
-                <p className="text-xs">
-                  If this screen did not come from the phone’s QR, type the
-                  phone’s Wi-Fi address shown under Devices there.
-                </p>
-                <div className="flex gap-2">
-                  <input
-                    value={peerHost}
-                    onChange={(e) => setPeerHost(e.target.value)}
-                    placeholder="192.168.…"
-                    className="h-9 flex-1 rounded-xl bg-fg/6 px-3 font-mono text-xs text-fg placeholder:text-subtle focus:outline-none"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const vault = loadVault();
-                      const host = peerHost.trim();
-                      if (!vault || !host) return;
-                      saveLanPeer({ host, port: HUB_PORT, vaultId: vault.id });
-                      toast("Will keep matching that phone on this Wi-Fi");
-                    }}
-                  >
-                    Use
-                  </Button>
-                </div>
-              </div>
-            ) : null}
             {connected ? (
               <div className="space-y-3 rounded-2xl bg-fg/4 px-3 py-3">
-                <p className="text-fg">If you are not on the same Wi-Fi</p>
+                <p className="text-fg">No API, or offline</p>
                 <p>
                   Send an encrypted packet. Same lock still required.
                 </p>
@@ -303,9 +330,8 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
                   className="text-xs text-subtle hover:text-fg"
                   onClick={() => {
                     clearVault();
-                    clearLanPeer();
+                    clearRemote();
                     setConnected(false);
-                    setPeerHost("");
                     toast("Lock forgotten on this device");
                   }}
                 >
@@ -319,9 +345,8 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
         {mode === "offer" ? (
           <div className="space-y-4">
             <p className="text-fg">
-              Scan this on the other device within 5 minutes. Show it from the
-              phone with the edge tab on — then both sides keep matching on
-              this Wi-Fi.
+              Scan or paste this on the other device. If you saved an API, the
+              QR carries that URL too — they do not need the same Wi-Fi.
             </p>
             <div
               className="mx-auto max-w-56 overflow-hidden rounded-2xl"
@@ -340,19 +365,19 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
               </Button>
             </div>
             <p>
-              Keep the edge tab on. Same Wi-Fi does the rest. Packet send is
-              only if you leave the network.
+              Short WISP. codes are only the lock. WISP2. invites include the
+              API. Packet send is the offline fallback.
             </p>
           </div>
         ) : null}
 
         {mode === "enter" ? (
           <div className="space-y-4">
-            <p className="text-fg">Paste the WISP.… lock from the other device.</p>
+            <p className="text-fg">Paste a WISP. lock or a WISP2. invite.</p>
             <textarea
               value={paste}
               onChange={(e) => setPaste(e.target.value)}
-              placeholder="WISP.…"
+              placeholder="WISP.… or WISP2.…"
               className="h-24 w-full rounded-xl bg-fg/6 px-3 py-2 font-mono text-xs text-fg placeholder:text-subtle focus:outline-none"
             />
             {error ? <p className="text-danger">{error}</p> : null}

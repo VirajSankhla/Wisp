@@ -3,7 +3,7 @@
 import { useEffect, useRef, type TouchEvent } from "react";
 import { Plus } from "lucide-react";
 import { collapseNativeOverlay } from "@/lib/overlay";
-import { startLanSync } from "@/lib/pairing/lan";
+import { startRemoteSync } from "@/lib/pairing/remote";
 import { useNotesStore } from "@/lib/notes/store";
 import { cn } from "@/lib/utils";
 import { DesktopScene } from "./desktop-scene";
@@ -66,7 +66,7 @@ export function WispApp() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    return startLanSync();
+    return startRemoteSync();
   }, []);
 
   useEffect(() => {

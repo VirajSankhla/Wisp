@@ -76,7 +76,6 @@ public class OverlayService extends Service {
         }
         peeked = getSharedPreferences(PREF, MODE_PRIVATE).getBoolean(PREF_PEEK, false);
         handleY = getSharedPreferences(PREF, MODE_PRIVATE).getInt(PREF_Y, -1);
-        syncServer.start();
         showHandle();
     }
 

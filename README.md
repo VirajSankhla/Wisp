@@ -27,12 +27,16 @@ You do not need Git, Node, or an .exe to start.
 
 ### Put the same notes on your phone and laptop
 
-1. On the first device, tap the phone icon (**Devices**).
-2. Tap **Show a code**. A QR and a `WISP.…` code appear. Copy the code (it is 50–100 characters, one-time, 5 minutes).
-3. On the second device, open the same Wisp → **Devices** → **Enter a code** → paste. Or scan the QR with the phone camera into a note, then paste (or scan if the browser can).
-4. Then **Save notes for the other device** on one screen and **Receive notes** on the other.
+Wisp does not run a cloud. You can still keep both devices in sync if **you** point them at an API you control (JSONBin, a gist, your own server). The payload is always encrypted.
 
-That is the only “login.” There is no Google, no X, no email.
+1. On one device, **Devices** → paste an API URL that accepts **GET** and **PUT** of JSON. Optional header, e.g. `X-Master-Key: …`. Tap **Save API**.
+2. Tap **Show a code**. The QR is a `WISP2.…` invite: lock + that URL.
+3. On the other device, **Enter a code** → paste or scan. It stores the lock and the API.
+4. After that, both sides pull/push the sealed blob over the internet — mobile data is fine. No same-Wi-Fi requirement.
+
+You can also paste the same API URL on both devices and only share a short `WISP.…` lock.
+
+No API? **Send notes / Receive notes** still moves an encrypted packet by hand.
 
 ---
 
@@ -50,16 +54,17 @@ Those files are built by GitHub’s computers (Actions), not on your machine. Yo
 
 If the Releases page is empty, the latest build is still running: **[Actions](https://github.com/VirajSankhla/Wisp/actions)**. Signed-in you can also download the workflow artifacts there.
 
-### There is no database behind the QR
+### There is no Wisp database behind the QR
 
-The QR / `WISP.…` code is **not a login to a server**. Nothing is stored in Postgres, Firebase, or any cloud DB.
+The QR is **not a login to a Wisp server**. Wisp does not host your notes.
 
-- Each device keeps notes in **its own browser storage**.
-- The code is a 5-minute envelope around 48 random bytes.
-- Both devices derive the same AES key from those bytes.
-- Notes move as an **encrypted file** you save on one device and open on the other.
+- Each device keeps notes in **its own storage**.
+- A short `WISP.…` code is only the encryption lock (5 minutes to join).
+- A `WISP2.…` invite is that lock plus **your** API URL.
+- The API (if you add one) stores an **encrypted blob**. Wisp never sends headings in the clear.
+- Offline, notes still live on the device. Packet send still works without an API.
 
-No connection string. No API key. No account.
+No Wisp connection string. No Wisp account. Your API key, if any, stays on your devices.
 
 ### Build the installers yourself (optional)
 
