@@ -20,4 +20,5 @@ export class WispOverlayWeb extends WebPlugin implements WispOverlayPlugin {
   async takeIncoming(): Promise<{ value: string }> {
     return { value: "" };
   }
+  async resize(): Promise<void> {}
 }

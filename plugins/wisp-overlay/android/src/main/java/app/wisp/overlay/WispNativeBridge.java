@@ -18,8 +18,10 @@ public class WispNativeBridge {
     }
 
     @JavascriptInterface
-    public void resize(int width, int height) {
-        main.post(() -> service.resizePanel(width, height));
+    public void resize(double width, double height) {
+        int w = (int) Math.round(width);
+        int h = (int) Math.round(height);
+        main.post(() -> service.resizePanel(w, h));
     }
 
     @JavascriptInterface

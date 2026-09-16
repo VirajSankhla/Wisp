@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Plus, X } from "lucide-react";
 import { collapseNativeOverlay, reportOverlaySize } from "@/lib/overlay";
+import { FAULT_LOG_ID } from "@/lib/notes/fault-log";
 import { visibleNotes } from "@/lib/notes/search";
 import { useNotesStore } from "@/lib/notes/store";
 import { cn } from "@/lib/utils";
@@ -17,12 +18,24 @@ export function OverlaySheet() {
   const selectedId = useNotesStore((s) => s.selectedId);
   const hasHydrated = useNotesStore((s) => s.hasHydrated);
   const selected = selectedId ? notes[selectedId] : undefined;
-  const list = useMemo(() => visibleNotes(notes, "", null).slice(0, 12), [notes]);
+  const list = useMemo(
+    () =>
+      visibleNotes(notes, "", null)
+        .filter((n) => n.id !== FAULT_LOG_ID)
+        .slice(0, 12),
+    [notes],
+  );
 
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
-    const send = () => reportOverlaySize(el);
+    const send = () => {
+      try {
+        reportOverlaySize(el);
+      } catch {
+        /* keep the bubbles even if the native window cannot shrink */
+      }
+    };
     send();
     const ro = new ResizeObserver(send);
     ro.observe(el);

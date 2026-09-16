@@ -7,4 +7,5 @@ export interface WispOverlayPlugin {
   localAddress(): Promise<{ value: string }>;
   publishSnapshot(options: { json: string }): Promise<void>;
   takeIncoming(): Promise<{ value: string }>;
+  resize(options: { width: number; height: number }): Promise<void>;
 }

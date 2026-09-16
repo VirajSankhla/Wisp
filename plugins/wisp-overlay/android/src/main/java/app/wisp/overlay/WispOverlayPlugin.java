@@ -89,4 +89,9 @@ public class WispOverlayPlugin extends Plugin {
         ret.put("value", OverlayHub.takeIncoming());
         call.resolve(ret);
     }
+
+    @PluginMethod
+    public void resize(PluginCall call) {
+        call.resolve();
+    }
 }

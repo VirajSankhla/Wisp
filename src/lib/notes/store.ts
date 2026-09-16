@@ -4,6 +4,8 @@ import { mergeNotes } from "./merge.ts";
 import { SAMPLE_IDS, sampleNotes } from "./samples.ts";
 import type { Note } from "./types.ts";
 
+const FAULT_LOG_ID = "wisp.fault-log";
+
 export type NotesState = {
   notes: Record<string, Note>;
   selectedId: string | null;
@@ -33,6 +35,7 @@ export type NotesState = {
   importNotes: (incoming: unknown) => { applied: number; skipped: number };
   clearStarterNotes: () => void;
   mergeRemote: (remote: unknown) => { applied: number; skipped: number };
+  appendFaultLog: (line: string) => void;
   snapshot: (id: string) => Note | undefined;
 };
 
@@ -185,6 +188,28 @@ export const useNotesStore = create<NotesState>()(
           return { notes: result.notes };
         });
         return { applied, skipped };
+      },
+      appendFaultLog: (line) => {
+        const text = line.trim();
+        if (!text) return;
+        const stamp = new Date().toISOString().replace("T", " ").slice(0, 19);
+        const chunk = `${stamp}\n${text}\n`;
+        set((s) => {
+          const existing = s.notes[FAULT_LOG_ID];
+          const body = existing
+            ? `${existing.body.trim()}\n\n${chunk}`.slice(-8000)
+            : chunk;
+          const note: Note = {
+            id: FAULT_LOG_ID,
+            heading: "Wisp log",
+            body,
+            tags: ["wisp-log"],
+            pinned: false,
+            updatedAt: now(),
+            deletedAt: null,
+          };
+          return { notes: { ...s.notes, [FAULT_LOG_ID]: note } };
+        });
       },
       snapshot: (id) => get().notes[id],
     }),

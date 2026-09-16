@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { WispOverlay } from "wisp-overlay";
+import { isNativeBridgeNoise, logWispFault } from "@/lib/notes/fault-log";
 
 type NativeBridge = {
   collapse?: () => void;
@@ -10,7 +11,10 @@ type NativeBridge = {
 };
 
 function native(): NativeBridge | undefined {
-  return (window as Window & { WispNative?: NativeBridge }).WispNative;
+  const bridge = (window as Window & { WispNative?: NativeBridge }).WispNative;
+  if (!bridge || typeof bridge !== "object") return undefined;
+  if ("addListener" in bridge) return undefined;
+  return bridge;
 }
 
 export function isAndroidNative() {
@@ -18,29 +22,44 @@ export function isAndroidNative() {
 }
 
 export function collapseNativeOverlay() {
-  native()?.collapse?.();
+  try {
+    native()?.collapse?.();
+  } catch (err) {
+    logWispFault(err instanceof Error ? err.message : "collapse failed");
+  }
 }
 
 export function reportOverlaySize(el: HTMLElement) {
-  const resize = native()?.resize;
-  if (!resize) return;
+  const bridge = native();
+  if (!bridge || typeof bridge.resize !== "function") return;
   const r = el.getBoundingClientRect();
-  resize(Math.max(1, Math.ceil(r.width)), Math.max(1, Math.ceil(r.height)));
+  try {
+    bridge.resize(Math.max(1, Math.ceil(r.width)), Math.max(1, Math.ceil(r.height)));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!isNativeBridgeNoise(message)) logWispFault("Overlay resize failed", message);
+  }
 }
 
 export async function lanAddress(): Promise<string> {
-  const fromBridge = native()?.localAddress?.();
-  if (fromBridge) return fromBridge;
   try {
+    const fromBridge = native()?.localAddress?.();
+    if (fromBridge) return fromBridge;
     const result = await WispOverlay.localAddress();
     return result.value ?? "";
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!isNativeBridgeNoise(message)) logWispFault("LAN address failed", message);
     return "";
   }
 }
 
 export async function publishLanSnapshot(json: string) {
-  native()?.publishSnapshot?.(json);
+  try {
+    native()?.publishSnapshot?.(json);
+  } catch {
+    /* overlay webview only */
+  }
   try {
     await WispOverlay.publishSnapshot({ json });
   } catch {
@@ -49,8 +68,12 @@ export async function publishLanSnapshot(json: string) {
 }
 
 export async function takeLanIncoming(): Promise<string> {
-  const fromBridge = native()?.takeIncoming?.();
-  if (fromBridge) return fromBridge;
+  try {
+    const fromBridge = native()?.takeIncoming?.();
+    if (fromBridge) return fromBridge;
+  } catch {
+    /* ignore */
+  }
   try {
     const result = await WispOverlay.takeIncoming();
     return result.value ?? "";

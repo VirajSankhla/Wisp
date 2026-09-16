@@ -102,15 +102,17 @@ public class OverlayService extends Service {
 
     public void resizePanel(int cssWidth, int cssHeight) {
         if (!expanded || panelView == null || windowManager == null) return;
-        float density = getResources().getDisplayMetrics().density;
-        int w = Math.max(dp(160), Math.round(cssWidth * density) + dp(4));
-        int h = Math.max(dp(56), Math.round(cssHeight * density) + dp(4));
-        int maxH = (int) (screenH() * 0.7f);
-        if (h > maxH) h = maxH;
-        WindowManager.LayoutParams params = (WindowManager.LayoutParams) panelView.getLayoutParams();
-        params.width = w;
-        params.height = h;
         try {
+            float density = getResources().getDisplayMetrics().density;
+            int w = Math.max(dp(160), Math.round(cssWidth * density) + dp(4));
+            int h = Math.max(dp(56), Math.round(cssHeight * density) + dp(4));
+            int maxH = (int) (screenH() * 0.7f);
+            if (h > maxH) h = maxH;
+            WindowManager.LayoutParams params =
+                (WindowManager.LayoutParams) panelView.getLayoutParams();
+            if (params == null) return;
+            params.width = w;
+            params.height = h;
             windowManager.updateViewLayout(panelView, params);
         } catch (Exception ignored) {}
     }
@@ -285,6 +287,15 @@ public class OverlayService extends Service {
             .build();
 
         web.setWebViewClient(new WebViewClientCompat() {
+            @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                view.evaluateJavascript(
+                    "window.CapacitorCustomPlatform={name:'web'};",
+                    null
+                );
+            }
+
             @Override
             public android.webkit.WebResourceResponse shouldInterceptRequest(
                 WebView view,

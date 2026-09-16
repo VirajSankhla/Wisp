@@ -22,6 +22,12 @@ export const Route = createRootRoute({
         content: "Heading-first notes at the edge of the screen. Offline, no account.",
       },
     ],
+    scripts: [
+      {
+        children:
+          "try{if(new URLSearchParams(location.search).get('overlay')==='1'){window.CapacitorCustomPlatform={name:'web'};}}catch(e){}",
+      },
+    ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "stylesheet", href: appCss },
