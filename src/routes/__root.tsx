@@ -25,7 +25,7 @@ export const Route = createRootRoute({
     scripts: [
       {
         children:
-          "try{if(new URLSearchParams(location.search).get('overlay')==='1'){window.CapacitorCustomPlatform={name:'web'};}}catch(e){}",
+          "try{if(new URLSearchParams(location.search).get('overlay')==='1'){document.documentElement.classList.add('wisp-overlay-mode');window.CapacitorCustomPlatform={name:'web'};}}catch(e){}",
       },
     ],
     links: [

@@ -5,6 +5,7 @@ import { isNativeBridgeNoise, logWispFault } from "@/lib/notes/fault-log";
 type NativeBridge = {
   collapse?: () => void;
   resize?: (width: number, height: number) => void;
+  ready?: (width: number, height: number) => void;
   publishSnapshot?: (json: string) => void;
   takeIncoming?: () => string;
   localAddress?: () => string;
@@ -29,15 +30,42 @@ export function collapseNativeOverlay() {
   }
 }
 
+let resizeTimer = 0;
+
 export function reportOverlaySize(el: HTMLElement) {
   const bridge = native();
-  if (!bridge || typeof bridge.resize !== "function") return;
+  const resize = bridge?.resize;
+  if (!resize) return;
   const r = el.getBoundingClientRect();
+  const width = Math.max(1, Math.ceil(r.width));
+  const height = Math.max(1, Math.ceil(r.height));
+  if (typeof window !== "undefined") {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      try {
+        resize(width, height);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (!isNativeBridgeNoise(message)) logWispFault("Overlay resize failed", message);
+      }
+    }, 40);
+  }
+}
+
+export function revealNativeOverlay(el: HTMLElement) {
+  const bridge = native();
+  const r = el.getBoundingClientRect();
+  const width = Math.max(1, Math.ceil(r.width));
+  const height = Math.max(1, Math.ceil(r.height));
   try {
-    bridge.resize(Math.max(1, Math.ceil(r.width)), Math.max(1, Math.ceil(r.height)));
+    if (typeof bridge?.ready === "function") {
+      bridge.ready(width, height);
+      return;
+    }
+    bridge?.resize?.(width, height);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    if (!isNativeBridgeNoise(message)) logWispFault("Overlay resize failed", message);
+    if (!isNativeBridgeNoise(message)) logWispFault("Overlay reveal failed", message);
   }
 }
 

@@ -47,7 +47,7 @@ This is the whole-phone overlay. Browser install cannot do it.
 2. Open Wisp → **Devices** → **Enable edge tab**.
 3. Allow **Display over other apps**.
 4. Leave Wisp. A small drop sits on the right of the *whole* phone.
-5. Push it into the edge until it is a thin line. Tap the drop for notes. Tap outside or **×** to hide.
+5. Push it into the edge until it is a thin line. Tap the drop for notes — **about four headings** show, then scroll. Tap outside or **×** to hide.
 6. A quiet notification keeps it alive. Hide from there if you want it gone.
 
 If something in the overlay fails, Wisp writes a **Wisp log** note (tag `wisp-log`) instead of blocking the screen.
@@ -66,14 +66,32 @@ Use this if you want both sides to keep matching over mobile data.
 
 The API only stores an **encrypted blob**. Headings never go out in the clear.
 
-1. On one device: **Devices** → paste a URL that accepts **GET** and **PUT** JSON.
-2. Optional header, for example `X-Master-Key: …`.
-3. **Save API** → **Show a code**. The QR is a `WISP2.…` invite (lock + URL).
-4. On the other device: **Enter a code** (paste or scan).
+**Which API?** Anything that accepts **GET** and **PUT** of JSON. Wisp does not host one. Easiest free option:
 
-Or paste the same URL on both devices and only share a short `WISP.…` lock.
+#### JSONBin (recommended to start)
 
-Anything that speaks GET/PUT JSON works: [JSONBin](https://jsonbin.io), a gist with a token, your own server. Wisp does not run that host.
+1. Open [jsonbin.io](https://jsonbin.io) and create a free account.
+2. **Create a bin**. Put `{}` in it and save. Copy the bin id.
+3. Open **API Keys** and copy the **X-Master-Key**.
+4. In Wisp → **Devices**:
+   - URL: `https://api.jsonbin.io/v3/b/YOUR_BIN_ID`
+   - Header: `X-Master-Key: YOUR_KEY`
+   - **Save API**
+5. **Show a code** on this device. Scan or paste on the other. After that they keep matching on cellular too.
+
+The free JSONBin tier is enough for a personal vault. Do not put the master key in a public README of *your* fork if that bin is private.
+
+#### Other hosts that work
+
+| Host | URL shape | Header |
+| --- | --- | --- |
+| [JSONBin](https://jsonbin.io) | `https://api.jsonbin.io/v3/b/<id>` | `X-Master-Key: …` |
+| [jsonstorage.net](https://jsonstorage.net) | `https://jsonstorage.net/api/items/<id>` | (none, or their token) |
+| Your own server / Cloudflare Worker | any `https://…` that GET/PUT JSON | whatever you require, one `Name: value` line |
+
+GitHub gists need PATCH, not PUT, so skip those unless you wrap them.
+
+Then **Show a code**. The QR is a `WISP2.…` invite (lock + URL). Or paste the same URL on both devices and only share a short `WISP.…` lock.
 
 ### 2. Encrypted packet (no API)
 

@@ -224,13 +224,36 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
         {mode === "home" ? (
           <div className="space-y-5">
             <p className="text-fg">
-              Paste your own API on one device, then show a QR. The other
-              device gets the lock and that URL. Notes stay encrypted; the API
-              only stores the sealed blob. No Wisp cloud. Works over mobile
-              data.
+              Optional. Wisp does not run a cloud. If you want both devices to
+              keep matching over mobile data, point them at any JSON store you
+              control. Notes stay encrypted on the way.
             </p>
             <AndroidOverlayCard />
             <div className="space-y-2">
+              <p className="text-xs font-medium text-fg">Which API</p>
+              <p className="text-xs text-subtle">
+                Easiest free one:{" "}
+                <span className="text-fg">jsonbin.io</span> (no Wisp account).
+                Create a bin, leave it as <span className="font-mono">{"{}"}</span>.
+              </p>
+              <ol className="list-decimal space-y-1 pl-5 text-xs text-subtle">
+                <li>
+                  URL:{" "}
+                  <span className="font-mono text-fg">
+                    https://api.jsonbin.io/v3/b/YOUR_BIN_ID
+                  </span>
+                </li>
+                <li>
+                  Header:{" "}
+                  <span className="font-mono text-fg">
+                    X-Master-Key: YOUR_KEY
+                  </span>
+                </li>
+              </ol>
+              <p className="text-xs text-subtle">
+                Anything else that accepts GET and PUT of JSON also works —
+                jsonstorage.net, or a tiny server of yours.
+              </p>
               <label className="text-xs text-subtle">API URL (GET + PUT JSON)</label>
               <input
                 value={apiUrl}
@@ -261,8 +284,8 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
                 Save API
               </Button>
               <p className="text-xs text-subtle">
-                Any host that accepts GET and PUT of JSON works — JSONBin, a
-                gist with a token, your own server.
+                Save it here, then Show a code — the QR carries this URL to the
+                other device.
               </p>
             </div>
             <ol className="list-decimal space-y-2 pl-5 text-fg">

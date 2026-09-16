@@ -102,10 +102,23 @@ public class OverlayService extends Service {
 
     public void resizePanel(int cssWidth, int cssHeight) {
         if (!expanded || panelView == null || windowManager == null) return;
+        applyPanelSize(cssWidth, cssHeight);
+    }
+
+    public void revealPanel(int cssWidth, int cssHeight) {
+        if (!expanded || panelView == null) return;
+        applyPanelSize(cssWidth, cssHeight);
+        if (panelView.getAlpha() < 1f) {
+            panelView.animate().alpha(1f).setDuration(140).start();
+        }
+    }
+
+    private void applyPanelSize(int cssWidth, int cssHeight) {
+        if (panelView == null || windowManager == null) return;
         try {
             float density = getResources().getDisplayMetrics().density;
-            int w = Math.max(dp(160), Math.round(cssWidth * density) + dp(4));
-            int h = Math.max(dp(56), Math.round(cssHeight * density) + dp(4));
+            int w = Math.max(dp(168), Math.round(cssWidth * density) + dp(4));
+            int h = Math.max(dp(88), Math.round(cssHeight * density) + dp(4));
             int maxH = (int) (screenH() * 0.7f);
             if (h > maxH) h = maxH;
             WindowManager.LayoutParams params =
@@ -272,7 +285,8 @@ public class OverlayService extends Service {
         Context ctx = getApplicationContext();
         WebView web = new WebView(ctx);
         web.setBackgroundColor(Color.TRANSPARENT);
-        web.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        web.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        web.setAlpha(0f);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -291,9 +305,19 @@ public class OverlayService extends Service {
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
                 view.evaluateJavascript(
-                    "window.CapacitorCustomPlatform={name:'web'};",
+                    "document.documentElement.classList.add('wisp-overlay-mode');window.CapacitorCustomPlatform={name:'web'};",
                     null
                 );
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                view.postDelayed(() -> {
+                    if (panelView != null && panelView.getAlpha() < 1f) {
+                        panelView.animate().alpha(1f).setDuration(140).start();
+                    }
+                }, 800);
             }
 
             @Override
@@ -314,8 +338,8 @@ public class OverlayService extends Service {
         web.loadUrl("https://localhost" + path);
 
         WindowManager.LayoutParams params = baseParams();
-        params.width = dp(220);
-        params.height = dp(72);
+        params.width = dp(280);
+        params.height = dp(268);
         params.gravity = Gravity.TOP | Gravity.END;
         params.x = dp(8);
         params.y = Math.max(dp(48), handleY - dp(8));

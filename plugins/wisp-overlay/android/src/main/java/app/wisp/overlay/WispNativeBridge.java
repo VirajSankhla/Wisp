@@ -25,6 +25,13 @@ public class WispNativeBridge {
     }
 
     @JavascriptInterface
+    public void ready(double width, double height) {
+        int w = (int) Math.round(width);
+        int h = (int) Math.round(height);
+        main.post(() -> service.revealPanel(w, h));
+    }
+
+    @JavascriptInterface
     public void publishSnapshot(String json) {
         OverlayHub.publish(json);
     }

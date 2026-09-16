@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { Plus, X } from "lucide-react";
-import { collapseNativeOverlay, reportOverlaySize } from "@/lib/overlay";
+import { collapseNativeOverlay, reportOverlaySize, revealNativeOverlay } from "@/lib/overlay";
 import { FAULT_LOG_ID } from "@/lib/notes/fault-log";
 import { visibleNotes } from "@/lib/notes/search";
 import { useNotesStore } from "@/lib/notes/store";
@@ -22,24 +22,32 @@ export function OverlaySheet() {
     () =>
       visibleNotes(notes, "", null)
         .filter((n) => n.id !== FAULT_LOG_ID)
-        .slice(0, 12),
+        .slice(0, 24),
     [notes],
   );
 
   useEffect(() => {
     const el = rootRef.current;
-    if (!el) return;
+    if (!el || !hasHydrated) return;
+    let revealed = false;
     const send = () => {
       try {
         reportOverlaySize(el);
+        if (!revealed) {
+          revealed = true;
+          revealNativeOverlay(el);
+        }
       } catch {
         /* keep the bubbles even if the native window cannot shrink */
       }
     };
-    send();
+    const id = requestAnimationFrame(() => requestAnimationFrame(send));
     const ro = new ResizeObserver(send);
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      cancelAnimationFrame(id);
+      ro.disconnect();
+    };
   }, [selectedId, list.length, hasHydrated]);
 
   function close() {
@@ -72,9 +80,7 @@ export function OverlaySheet() {
         </button>
       </div>
 
-      {!hasHydrated ? (
-        <div className={cn(bubble, "h-10 w-36")} />
-      ) : selected && !selected.deletedAt ? (
+      {!hasHydrated ? null : selected && !selected.deletedAt ? (
         <OverlayNote
           heading={selected.heading}
           body={selected.body}
@@ -87,7 +93,7 @@ export function OverlaySheet() {
           onBack={() => useNotesStore.getState().setSelectedId(null)}
         />
       ) : (
-        <div className="flex max-h-[46vh] w-fit max-w-[280px] flex-col items-end gap-1.5 overflow-y-auto">
+        <div className="flex max-h-[170px] w-fit max-w-[280px] flex-col items-end gap-1.5 overflow-y-auto overscroll-contain">
           {list.length === 0 ? (
             <div
               className={cn(

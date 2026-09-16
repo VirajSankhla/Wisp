@@ -42,6 +42,9 @@ export function WispApp() {
   const overlayMode =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("overlay") === "1";
+  if (overlayMode && typeof document !== "undefined") {
+    document.documentElement.classList.add("wisp-overlay-mode");
+  }
   const noteCount = useNotesStore(
     (s) => Object.values(s.notes).filter((n) => !n.deletedAt).length,
   );
