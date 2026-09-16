@@ -1,103 +1,115 @@
 # Wisp
 
-**Notes that stay at the edge.**
+**A tiny personal memory at the edge of the screen.**
 
-Wisp is a tiny, heading-first notes app. Write a heading. Tuck it away. Get back to whatever you were doing.
+Write a heading. Tuck it away. Pull it back when you need it.
 
-There is **no account**. There is **no Google or X login**. Connecting another phone or laptop is a **one-time code** (about 70–80 characters) or a **QR** of that same code.
+Wisp is **personal-first and local-first**. It works fully offline, with no account and no Wisp cloud. You can fork it, host it, or just use the installers.
 
-It is free to run. You can use it in the browser, install it as an app from the browser, or host it yourself.
-
----
-
-## If you only want to *use* Wisp (no coding)
-
-You do not need Git, Node, or an .exe to start.
-
-1. Open Wisp in a browser (the live site you were given, or a copy someone hosted).
-2. **Install it so it behaves like software:**
-
-| Device | What to do | What you get |
-| --- | --- | --- |
-| **Windows / Mac / Chromebook** | Chrome or Edge → install icon in the address bar, **or** menu → **Install Wisp** / **Cast, save, and share → Install page as app** | A standalone window. This *is* the Windows/Mac app. Offline, in the taskbar / Dock. |
-| **Android** | Chrome → menu → **Install app** or **Add to Home screen** | An icon on the home screen. Full-screen, offline. |
-| **iPhone / iPad** | **Safari** (not Chrome) → Share → **Add to Home Screen** | An icon on the home screen. Offline. iOS does not allow a third-party swipe-from-the-edge overlay, and you cannot sideload a random `.ipa` without Apple’s store. |
-
-3. Use it. Notes stay on that device. No sign-up.
-
-### Put the same notes on your phone and laptop
-
-Wisp does not run a cloud. You can still keep both devices in sync if **you** point them at an API you control (JSONBin, a gist, your own server). The payload is always encrypted.
-
-1. On one device, **Devices** → paste an API URL that accepts **GET** and **PUT** of JSON. Optional header, e.g. `X-Master-Key: …`. Tap **Save API**.
-2. Tap **Show a code**. The QR is a `WISP2.…` invite: lock + that URL.
-3. On the other device, **Enter a code** → paste or scan. It stores the lock and the API.
-4. After that, both sides pull/push the sealed blob over the internet — mobile data is fine. No same-Wi-Fi requirement.
-
-You can also paste the same API URL on both devices and only share a short `WISP.…` lock.
-
-No API? **Send notes / Receive notes** still moves an encrypted packet by hand.
-
----
-
-## Classic `.exe` (Windows) and `.apk` (Android)
-
-**Fastest: install from the browser** (table above). That needs no GitHub files at all.
-
-**Want a real installer file from GitHub, no source on your laptop:**
-
-1. Open **[Releases](https://github.com/VirajSankhla/Wisp/releases)**.
-2. Download `Wisp_…_x64-setup.exe` for Windows, and `app-debug.apk` (rename to `Wisp.apk`) for Android.
-**Android overlay:** install the `.apk`, then Wisp → Devices → Enable edge tab. Allow *Display over other apps*. A tab sits on the right of the whole phone, over other apps. The browser install cannot do this. iPhone cannot do this.
-
-Those files are built by GitHub’s computers (Actions), not on your machine. You never clone the repo.
-
-If the Releases page is empty, the latest build is still running: **[Actions](https://github.com/VirajSankhla/Wisp/actions)**. Signed-in you can also download the workflow artifacts there.
-
-### There is no Wisp database behind the QR
-
-The QR is **not a login to a Wisp server**. Wisp does not host your notes.
-
-- Each device keeps notes in **its own storage**.
-- A short `WISP.…` code is only the encryption lock (5 minutes to join).
-- A `WISP2.…` invite is that lock plus **your** API URL.
-- The API (if you add one) stores an **encrypted blob**. Wisp never sends headings in the clear.
-- Offline, notes still live on the device. Packet send still works without an API.
-
-No Wisp connection string. No Wisp account. Your API key, if any, stays on your devices.
-
-### Build the installers yourself (optional)
-
-GitHub Actions (`.github/workflows/release-native.yml`) is the supported way.
-
-Locally, after `npm install` + `npm run build`:
-
-```sh
-npm run native:dist
-npx tauri build --bundles nsis   # Windows .exe (needs a Windows machine or the Actions runner)
-npx cap add android && npx cap copy android
-# then Android Studio → Build APK
+```
+N          new note
+/          search headings and #tags
+Esc        tuck it away
 ```
 
+The list is headings only. Tags stay hidden until you search them.
 
 ---
 
-## Host it yourself (fully free)
+## Use it (no coding)
 
-No paid API, no Google client id, no X app, no database, no account server.
+Open Wisp in a browser. Notes stay on that device. That is enough.
 
-### Fastest: run it on your machine
+| Device | Install | Overlay over other apps |
+| --- | --- | --- |
+| **Windows / Mac / Chromebook** | Chrome or Edge → install icon in the address bar, or **Install Wisp** | Desktop handle on the right. Browser / PWA is enough. |
+| **Android** | Chrome → **Install app**, **or** the `.apk` below | **Only the `.apk`** can sit over the home screen and other apps (game-bar). |
+| **iPhone / iPad** | **Safari** → Share → **Add to Home Screen** | Not possible. Apple does not allow a third-party overlay over other apps. |
 
-Needs [Node.js 22+](https://nodejs.org/) (free).
+No sign-up. No Google. No X.
+
+---
+
+## `.apk` and `.exe` from GitHub
+
+You do not need the source. GitHub Actions builds the files.
+
+1. Open **[Releases](https://github.com/VirajSankhla/Wisp/releases)**.
+2. **Android:** download `app-debug.apk` (you can rename it `Wisp.apk`). Enable *Install unknown apps*, then open it.
+3. **Windows:** download `Wisp_…_x64-setup.exe` and run it.
+4. If Releases looks empty, the build is still running under **[Actions](https://github.com/VirajSankhla/Wisp/actions)**.
+
+### Android edge tab (game-bar)
+
+This is the whole-phone overlay. Browser install cannot do it.
+
+1. Install the `.apk`.
+2. Open Wisp → **Devices** → **Enable edge tab**.
+3. Allow **Display over other apps**.
+4. Leave Wisp. A small drop sits on the right of the *whole* phone.
+5. Push it into the edge until it is a thin line. Tap the drop for notes. Tap outside or **×** to hide.
+6. A quiet notification keeps it alive. Hide from there if you want it gone.
+
+If something in the overlay fails, Wisp writes a **Wisp log** note (tag `wisp-log`) instead of blocking the screen.
+
+---
+
+## Same notes on phone and laptop
+
+**You do not need an API for Wisp to work.** One device is the default.
+
+There is no Wisp server behind the QR. Three ways to share:
+
+### 1. Optional API you control (auto, any network)
+
+Use this if you want both sides to keep matching over mobile data.
+
+The API only stores an **encrypted blob**. Headings never go out in the clear.
+
+1. On one device: **Devices** → paste a URL that accepts **GET** and **PUT** JSON.
+2. Optional header, for example `X-Master-Key: …`.
+3. **Save API** → **Show a code**. The QR is a `WISP2.…` invite (lock + URL).
+4. On the other device: **Enter a code** (paste or scan).
+
+Or paste the same URL on both devices and only share a short `WISP.…` lock.
+
+Anything that speaks GET/PUT JSON works: [JSONBin](https://jsonbin.io), a gist with a token, your own server. Wisp does not run that host.
+
+### 2. Encrypted packet (no API)
+
+**Devices** → **Send notes** on the device that has the latest copy → **Receive notes** on the other. WhatsApp, AirDrop, USB, a file — anything that moves the packet.
+
+### 3. Stay on one device
+
+Do nothing. Notes live in that app’s storage. Backup JSON if you want a file on disk.
+
+---
+
+## What the QR actually is
+
+Not a login. Not a Wisp database.
+
+| Code | Meaning |
+| --- | --- |
+| `WISP.…` | Short lock (about 70–80 characters, 5 minutes). Both devices derive the same local encryption key. |
+| `WISP2.…` | That lock **plus** your API URL (and optional header). Longer; meant for the QR. |
+
+After pairing, the code is forgotten. The vault key stays on the device.
+
+---
+
+## Host it yourself
+
+No paid API, no OAuth, no database required.
 
 ```sh
-git clone <this-repo>
-cd <this-repo>
+git clone https://github.com/VirajSankhla/Wisp.git
+cd Wisp
 npm install
 npm run dev
 ```
 
-Open `http://localhost:8080`. That is Wisp. Put it behind any free tunnel or just use it on the LAN.
+Open `http://localhost:8080`.
 
 Production-style:
 
@@ -106,56 +118,41 @@ npm run build
 npx vite preview --host 0.0.0.0 --port 8080
 ```
 
-### Free public host
+Deploy the build to any free static/Node host (Cloudflare Pages, Netlify, a home Pi). Do **not** set Google/X keys.
 
-Because this is a normal Node/Vite app, you can deploy the build to any free static/Node host you already like (Cloudflare Pages, Netlify, Vercel, GitHub Pages with a Node build, a $0 home Raspberry Pi). You do **not** need to turn on their auth products. Do not set Google/X keys — Wisp will not use them.
+Keep backups wherever you want (`D:\Wisp`, a USB stick). The live copy is on the device; the backup file is yours.
 
-### Docker (optional)
-
-```dockerfile
-FROM node:22-alpine
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-EXPOSE 8080
-CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "8080"]
-```
+### Docker
 
 ```sh
 docker build -t wisp .
 docker run -p 8080:8080 wisp
 ```
 
-Put notes on another disk by keeping backups in a folder you choose (`D:\Wisp`, `~/Wisp`, a USB stick). The browser still holds the live copy; the backup file is yours.
+---
+
+## Keyboard
+
+```
+N            new note
+/  or ⌘K     search
+#tag         filter by tag
+?            guide
+Esc          tuck / back
+```
+
+On a phone, swipe in from the right to open the panel (inside the app). The system-wide edge tab is Android `.apk` only.
 
 ---
 
-## What Wisp is
+## Privacy
 
-- Right-edge glass panel, tucked handle, live note count
-- Swipe in from the right on a phone
-- Heading-only list (tags hidden until you search `#tag`)
-- Instant capture (`N`), search (`/` or `Ctrl+K`), tuck (`Esc`)
-- Offline on the device
-- JSON backup (`wisp.backup.v1`)
-- Device connection by **code or QR only**
+- Notes live on the device first (`localStorage`: `wisp.notes.v1`, `wisp.vault.v1`).
+- A backup or packet moves because **you** saved or opened a file.
+- An optional API you add stores ciphertext only.
+- No analytics. No identity provider. No Wisp account.
 
-```
-N        →   New note
-/        →   Search
-#ideas   →   Find ideas
-Esc      →   Disappear
-```
-
----
-
-## Privacy, honestly
-
-Notes live on the device first. A backup or a connected-device snapshot moves because **you** saved or opened a file. There is no analytics and no identity provider.
-
-The connection code is short-lived. After both devices use it, they share an encrypted vault key stored locally. The code itself is not a password you keep.
+If Wisp hits a native fault, it appends to a **Wisp log** note on that device so you can see what happened.
 
 ---
 
@@ -163,17 +160,20 @@ The connection code is short-lived. After both devices use it, they share an enc
 
 ```sh
 npm install
-npm run dev
+npm run dev          # http://localhost:8080
 npm run typecheck
 npm test
 npm run lint
 npm run build
 ```
 
+Installers: `.github/workflows/release-native.yml` (Actions → **Build Wisp installers**).
+
 ```
-src/components/wisp/     panel, list, editor, guide, devices
-src/lib/notes/           Note model, store, search, backup
-src/lib/pairing/         connection code, QR, encrypted snapshots
+src/components/wisp/     panel, list, editor, overlay, devices
+src/lib/notes/           model, store, search, backup, fault log
+src/lib/pairing/         lock, invite, encrypted snapshot, optional API
+plugins/wisp-overlay/    Android edge tab
 ```
 
 ---
