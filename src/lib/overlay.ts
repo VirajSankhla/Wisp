@@ -31,8 +31,10 @@ export function collapseNativeOverlay() {
 }
 
 let resizeTimer = 0;
+let overlayLocked = false;
 
 export function reportOverlaySize(el: HTMLElement) {
+  if (overlayLocked) return;
   const bridge = native();
   const resize = bridge?.resize;
   if (!resize) return;
@@ -53,6 +55,7 @@ export function reportOverlaySize(el: HTMLElement) {
 }
 
 export function revealNativeOverlay(el: HTMLElement) {
+  overlayLocked = true;
   const bridge = native();
   const r = el.getBoundingClientRect();
   const width = Math.max(1, Math.ceil(r.width));

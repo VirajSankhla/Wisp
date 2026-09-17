@@ -21,4 +21,5 @@ export class WispOverlayWeb extends WebPlugin implements WispOverlayPlugin {
     return { value: "" };
   }
   async resize(): Promise<void> {}
+  async setLook(): Promise<void> {}
 }

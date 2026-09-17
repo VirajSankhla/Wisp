@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, type RefObject } from "react";
-import { CircleHelp, Plus, Search, Smartphone, X } from "lucide-react";
+import { CircleHelp, Plus, Search, Settings, Smartphone, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { collectTags, visibleNotes } from "@/lib/notes/search";
@@ -12,6 +12,7 @@ import { WispGuide } from "./guide";
 import { WispMark } from "./mark";
 import { NoteEditor } from "./note-editor";
 import { NoteList } from "./note-list";
+import { SettingsPanel } from "./settings";
 
 export function WispPanel({
   searchRef,
@@ -25,6 +26,7 @@ export function WispPanel({
   const searchOpen = useNotesStore((s) => s.searchOpen);
   const guideOpen = useNotesStore((s) => s.guideOpen);
   const devicesOpen = useNotesStore((s) => s.devicesOpen);
+  const settingsOpen = useNotesStore((s) => s.settingsOpen);
   const hasHydrated = useNotesStore((s) => s.hasHydrated);
   const selected = selectedId ? notes[selectedId] : undefined;
   const showEditor = Boolean(selected && !selected.deletedAt);
@@ -67,6 +69,17 @@ export function WispPanel({
           <span className="font-display text-lg tracking-tight">Wisp</span>
         </div>
         <div className="ml-auto flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={settingsOpen ? "Close settings" : "Settings"}
+            onClick={() =>
+              useNotesStore.getState().setSettingsOpen(!settingsOpen)
+            }
+          >
+            <Settings className="size-4" />
+          </Button>
           <Button
             type="button"
             variant="ghost"
@@ -163,6 +176,8 @@ export function WispPanel({
           </div>
         ) : devicesOpen ? (
           <DevicesPanel onBack={() => useNotesStore.getState().setDevicesOpen(false)} />
+        ) : settingsOpen ? (
+          <SettingsPanel onBack={() => useNotesStore.getState().setSettingsOpen(false)} />
         ) : guideOpen ? (
           <WispGuide onBack={() => useNotesStore.getState().setGuideOpen(false)} />
         ) : showEditor && selected ? (

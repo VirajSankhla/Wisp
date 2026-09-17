@@ -2,6 +2,7 @@ import { Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/lib/notes/types";
 import { relativeTime } from "./relative-time";
+import { useNotesStore } from "@/lib/notes/store";
 
 function Row({
   note,
@@ -15,37 +16,55 @@ function Row({
   const heading = note.heading.trim() || "Untitled";
   return (
     <li>
-      <button
-        type="button"
-        onClick={() => onSelect(note.id)}
+      <div
         className={cn(
-          "flex w-full items-baseline gap-3 rounded-xl px-3 py-3 text-left transition-colors duration-150",
+          "flex w-full items-center gap-1 rounded-xl pr-1 transition-colors duration-150",
           selected ? "bg-fg/8" : "hover:bg-fg/5",
         )}
       >
-        <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2">
-            {note.pinned ? (
-              <Pin
-                className="size-3 shrink-0 text-pin"
-                strokeWidth={2}
-                aria-label="Pinned"
-              />
-            ) : null}
-            <span
-              className={cn(
-                "truncate font-display text-note leading-snug tracking-tight",
-                note.heading.trim() ? "text-fg" : "text-muted italic",
-              )}
-            >
-              {heading}
+        <button
+          type="button"
+          onClick={() => onSelect(note.id)}
+          className="flex min-w-0 flex-1 items-baseline gap-3 px-3 py-3 text-left"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-2">
+              {note.pinned ? (
+                <Pin
+                  className="size-3 shrink-0 fill-pin text-pin"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              ) : null}
+              <span
+                className={cn(
+                  "truncate font-display text-note leading-snug tracking-tight",
+                  note.heading.trim() ? "text-fg" : "text-muted italic",
+                )}
+              >
+                {heading}
+              </span>
             </span>
           </span>
-        </span>
-        <span className="shrink-0 font-sans text-xs tabular-nums text-subtle">
-          {relativeTime(note.updatedAt)}
-        </span>
-      </button>
+          <span className="shrink-0 font-sans text-xs tabular-nums text-subtle">
+            {relativeTime(note.updatedAt)}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            useNotesStore.getState().updateNote(note.id, { pinned: !note.pinned });
+          }}
+          aria-label={note.pinned ? "Unpin" : "Pin"}
+          className={cn(
+            "grid size-9 shrink-0 place-items-center rounded-full",
+            note.pinned ? "text-pin" : "text-subtle hover:text-fg",
+          )}
+        >
+          <Pin className={cn("size-3.5", note.pinned ? "fill-pin" : "")} />
+        </button>
+      </div>
     </li>
   );
 }

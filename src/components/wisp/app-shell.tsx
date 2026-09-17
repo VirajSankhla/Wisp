@@ -6,6 +6,7 @@ import { collapseNativeOverlay } from "@/lib/overlay";
 import { installFaultLogger } from "@/lib/notes/fault-log";
 import { startRemoteSync } from "@/lib/pairing/remote";
 import { useNotesStore } from "@/lib/notes/store";
+import { applyPrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { DesktopScene } from "./desktop-scene";
 import { WispMark } from "./mark";
@@ -66,6 +67,10 @@ export function WispApp() {
     });
     void useNotesStore.persist.rehydrate();
     return unsub;
+  }, []);
+
+  useEffect(() => {
+    applyPrefs();
   }, []);
 
   useEffect(() => {

@@ -35,19 +35,24 @@ public class OverlayService extends Service {
     public static final String PREF_ENABLED = "enabled";
     public static final String PREF_PEEK = "peek";
     public static final String PREF_Y = "y";
+    public static final String PREF_HANDLE = "handleDp";
     public static final String ACTION_STOP = "app.wisp.overlay.STOP";
 
     private static final String CHANNEL = "wisp-edge";
     private static final int NOTIF = 71;
     private static volatile boolean running = false;
+    private static OverlayService instance;
 
     private WindowManager windowManager;
     private View handleView;
     private View panelView;
+    private WebView panelWeb;
     private ImageView dropView;
     private View nubView;
     private boolean expanded = false;
     private boolean peeked = false;
+    private boolean panelReady = false;
+    private boolean sizeLocked = false;
     private int handleY = 0;
     private final SyncServer syncServer = new SyncServer();
     private float downRawX;
@@ -59,6 +64,11 @@ public class OverlayService extends Service {
         return running;
     }
 
+    public static void applyHandleDp(int ignored) {
+        OverlayService s = instance;
+        if (s != null) s.handleSizeChanged();
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -68,6 +78,7 @@ public class OverlayService extends Service {
     public void onCreate() {
         super.onCreate();
         running = true;
+        instance = this;
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
         startForeground(NOTIF, buildNotification());
         if (!Settings.canDrawOverlays(this)) {
@@ -77,6 +88,7 @@ public class OverlayService extends Service {
         peeked = getSharedPreferences(PREF, MODE_PRIVATE).getBoolean(PREF_PEEK, false);
         handleY = getSharedPreferences(PREF, MODE_PRIVATE).getInt(PREF_Y, -1);
         showHandle();
+        ensurePanel(false);
     }
 
     @Override
@@ -92,25 +104,34 @@ public class OverlayService extends Service {
     @Override
     public void onDestroy() {
         running = false;
+        if (instance == this) instance = null;
         syncServer.stop();
         detach(handleView);
-        detach(panelView);
+        detach(panelWeb);
+        if (panelWeb != null) {
+            panelWeb.destroy();
+        }
         handleView = null;
         panelView = null;
+        panelWeb = null;
         super.onDestroy();
     }
 
     public void resizePanel(int cssWidth, int cssHeight) {
+        if (sizeLocked) return;
         if (!expanded || panelView == null || windowManager == null) return;
         applyPanelSize(cssWidth, cssHeight);
     }
 
     public void revealPanel(int cssWidth, int cssHeight) {
-        if (!expanded || panelView == null) return;
-        applyPanelSize(cssWidth, cssHeight);
+        if (panelView == null) return;
+        if (!sizeLocked) applyPanelSize(cssWidth, cssHeight);
+        sizeLocked = true;
+        panelReady = true;
         if (panelView.getAlpha() < 1f) {
-            panelView.animate().alpha(1f).setDuration(140).start();
+            panelView.animate().alpha(1f).setDuration(90).start();
         }
+        if (expanded) detach(handleView);
     }
 
     private void applyPanelSize(int cssWidth, int cssHeight) {
@@ -133,47 +154,55 @@ public class OverlayService extends Service {
     public void collapse() {
         if (!expanded) return;
         expanded = false;
-        detach(panelView);
-        panelView = null;
+        detach(panelWeb);
         showHandle();
     }
 
     private void expand(boolean freshNote) {
         if (expanded) return;
         expanded = true;
-        detach(handleView);
-        handleView = null;
-        showPanel(freshNote);
+        ensurePanel(freshNote);
+        attachPanel();
+        if (panelReady) {
+            if (panelWeb != null) panelWeb.setAlpha(1f);
+            detach(handleView);
+        }
     }
 
     private void showHandle() {
-        if (handleView != null) return;
-        FrameLayout bubble = new FrameLayout(this);
-        dropView = new ImageView(this);
-        dropView.setImageResource(R.drawable.wisp_drop);
-        dropView.setPadding(dp(11), dp(11), dp(11), dp(11));
-        bubble.addView(
-            dropView,
-            new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        );
-        nubView = new View(this);
-        GradientDrawable line = new GradientDrawable();
-        line.setColor(0xD9C5CDD8);
-        line.setCornerRadii(new float[] { dp(4), dp(4), 0, 0, 0, 0, dp(4), dp(4) });
-        nubView.setBackground(line);
-        FrameLayout.LayoutParams nubLp = new FrameLayout.LayoutParams(dp(5), dp(36));
-        nubLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-        bubble.addView(nubView, nubLp);
-        bubble.setOnTouchListener(this::onHandleTouch);
-        handleView = bubble;
-        if (handleY < 0) {
-            handleY = Math.max(dp(80), screenH() / 2 - dp(22));
+        if (handleView == null) {
+            FrameLayout bubble = new FrameLayout(this);
+            dropView = new ImageView(this);
+            dropView.setImageResource(R.drawable.wisp_drop);
+            int pad = Math.max(8, handleDp() / 4);
+            dropView.setPadding(dp(pad), dp(pad), dp(pad), dp(pad));
+            bubble.addView(
+                dropView,
+                new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            );
+            nubView = new View(this);
+            GradientDrawable line = new GradientDrawable();
+            line.setColor(0xD9C5CDD8);
+            line.setCornerRadii(new float[] { dp(4), dp(4), 0, 0, 0, 0, dp(4), dp(4) });
+            nubView.setBackground(line);
+            FrameLayout.LayoutParams nubLp = new FrameLayout.LayoutParams(dp(5), dp(36));
+            nubLp.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
+            bubble.addView(nubView, nubLp);
+            bubble.setOnTouchListener(this::onHandleTouch);
+            handleView = bubble;
+            if (handleY < 0) {
+                handleY = Math.max(dp(80), screenH() / 2 - dp(22));
+            }
         }
         applyHandleLayout();
-        windowManager.addView(handleView, handleParams());
+        if (handleView.getParent() == null) {
+            windowManager.addView(handleView, handleParams());
+        } else {
+            windowManager.updateViewLayout(handleView, handleParams());
+        }
     }
 
     private boolean onHandleTouch(View view, MotionEvent event) {
@@ -257,8 +286,8 @@ public class OverlayService extends Service {
             params.height = dp(52);
             params.x = 0;
         } else {
-            params.width = dp(44);
-            params.height = dp(44);
+            params.width = dp(handleDp());
+            params.height = dp(handleDp());
             params.x = dp(8);
         }
         params.gravity = Gravity.TOP | Gravity.END;
@@ -281,7 +310,16 @@ public class OverlayService extends Service {
         return y;
     }
 
-    private void showPanel(boolean freshNote) {
+    private void ensurePanel(boolean freshNote) {
+        if (panelWeb != null) {
+            if (freshNote && panelReady) {
+                panelWeb.evaluateJavascript(
+                    "try{window.__wispCreateNote&&window.__wispCreateNote()}catch(e){}",
+                    null
+                );
+            }
+            return;
+        }
         Context ctx = getApplicationContext();
         WebView web = new WebView(ctx);
         web.setBackgroundColor(Color.TRANSPARENT);
@@ -313,11 +351,11 @@ public class OverlayService extends Service {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                view.postDelayed(() -> {
-                    if (panelView != null && panelView.getAlpha() < 1f) {
-                        panelView.animate().alpha(1f).setDuration(140).start();
-                    }
-                }, 800);
+                panelReady = true;
+                if (expanded) {
+                    view.setAlpha(1f);
+                    detach(handleView);
+                }
             }
 
             @Override
@@ -334,9 +372,26 @@ public class OverlayService extends Service {
             }
         });
 
-        String path = freshNote ? "/?overlay=1&new=1" : "/?overlay=1&open=1";
-        web.loadUrl("https://localhost" + path);
+        web.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_OUTSIDE) {
+                collapse();
+                return true;
+            }
+            return false;
+        });
+        web.loadUrl("https://localhost/?overlay=1&open=1");
+        panelWeb = web;
+        panelView = web;
+    }
 
+    private void attachPanel() {
+        if (panelWeb == null || windowManager == null) return;
+        if (panelWeb.getParent() != null) return;
+        panelWeb.setAlpha(panelReady ? 1f : 0f);
+        windowManager.addView(panelWeb, panelParams());
+    }
+
+    private WindowManager.LayoutParams panelParams() {
         WindowManager.LayoutParams params = baseParams();
         params.width = dp(280);
         params.height = dp(268);
@@ -347,15 +402,22 @@ public class OverlayService extends Service {
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
             WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
-        panelView = web;
-        web.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_OUTSIDE) {
-                collapse();
-                return true;
-            }
-            return false;
-        });
-        windowManager.addView(panelView, params);
+        return params;
+    }
+
+    void handleSizeChanged() {
+        if (handleView == null || windowManager == null) return;
+        if (handleView.getParent() == null) return;
+        try {
+            windowManager.updateViewLayout(handleView, handleParams());
+        } catch (Exception ignored) {}
+    }
+
+    private int handleDp() {
+        int v = getSharedPreferences(PREF, MODE_PRIVATE).getInt(PREF_HANDLE, 44);
+        if (v < 28) v = 28;
+        if (v > 72) v = 72;
+        return v;
     }
 
     private WindowManager.LayoutParams baseParams() {

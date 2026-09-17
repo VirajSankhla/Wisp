@@ -12,7 +12,7 @@ N          new note
 Esc        tuck it away
 ```
 
-The list is headings only. Tags stay hidden until you search them.
+The list is headings only. Tags stay hidden until you search them. Pin from the list or the editor — pinned notes sit at the top.
 
 ---
 
@@ -47,8 +47,12 @@ This is the whole-phone overlay. Browser install cannot do it.
 2. Open Wisp → **Devices** → **Enable edge tab**.
 3. Allow **Display over other apps**.
 4. Leave Wisp. A small drop sits on the right of the *whole* phone.
-5. Push it into the edge until it is a thin line. Tap the drop for notes — **about four headings** show, then scroll. Tap outside or **×** to hide.
+5. Push it into the edge until it is a thin line. Tap the drop for notes — **about four headings** show, then scroll. Tap a heading to edit. Trash deletes a mistaken note. Tap outside or **×** to hide.
 6. A quiet notification keeps it alive. Hide from there if you want it gone.
+
+The overlay WebView stays loaded, so the second tap should be instant. Opening a note no longer resizes the window (content scrolls inside).
+
+**Settings** (gear in the app, not in the overlay): Compact / Regular / Large for the drop and bubbles, and 3 / 4 / 5 visible headings. Restart the edge tab if the drop size does not update.
 
 If something in the overlay fails, Wisp writes a **Wisp log** note (tag `wisp-log`) instead of blocking the screen.
 
@@ -188,8 +192,9 @@ npm run build
 Installers: `.github/workflows/release-native.yml` (Actions → **Build Wisp installers**).
 
 ```
-src/components/wisp/     panel, list, editor, overlay, devices
+src/components/wisp/     panel, list, editor, overlay, devices, settings
 src/lib/notes/           model, store, search, backup, fault log
+src/lib/prefs.ts         overlay density and visible-row count
 src/lib/pairing/         lock, invite, encrypted snapshot, optional API
 plugins/wisp-overlay/    Android edge tab
 ```

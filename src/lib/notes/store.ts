@@ -15,6 +15,7 @@ export type NotesState = {
   searchOpen: boolean;
   guideOpen: boolean;
   devicesOpen: boolean;
+  settingsOpen: boolean;
   hasHydrated: boolean;
   setHasHydrated: (value: boolean) => void;
   seedIfEmpty: () => void;
@@ -25,6 +26,7 @@ export type NotesState = {
   setSearchOpen: (open: boolean) => void;
   setGuideOpen: (open: boolean) => void;
   setDevicesOpen: (open: boolean) => void;
+  setSettingsOpen: (open: boolean) => void;
   createNote: () => string;
   updateNote: (
     id: string,
@@ -54,6 +56,7 @@ export const useNotesStore = create<NotesState>()(
       searchOpen: false,
       guideOpen: false,
       devicesOpen: false,
+      settingsOpen: false,
       hasHydrated: false,
       setHasHydrated: (value) => set({ hasHydrated: value }),
       seedIfEmpty: () => {
@@ -63,7 +66,12 @@ export const useNotesStore = create<NotesState>()(
       setQuery: (query) => set({ query }),
       setActiveTag: (tag) => set({ activeTag: tag, searchOpen: true }),
       setSelectedId: (id) =>
-        set({ selectedId: id, guideOpen: false, devicesOpen: false }),
+        set({
+          selectedId: id,
+          guideOpen: false,
+          devicesOpen: false,
+          settingsOpen: false,
+        }),
       setPanelOpen: (open) =>
         set({
           panelOpen: open,
@@ -74,6 +82,7 @@ export const useNotesStore = create<NotesState>()(
                 searchOpen: false,
                 guideOpen: false,
                 devicesOpen: false,
+                settingsOpen: false,
               }),
         }),
       setSearchOpen: (open) =>
@@ -81,6 +90,7 @@ export const useNotesStore = create<NotesState>()(
           searchOpen: open,
           guideOpen: false,
           devicesOpen: false,
+          settingsOpen: false,
           ...(open ? {} : { query: "", activeTag: null }),
         }),
       setGuideOpen: (open) =>
@@ -91,6 +101,7 @@ export const useNotesStore = create<NotesState>()(
                 selectedId: null,
                 searchOpen: false,
                 devicesOpen: false,
+                settingsOpen: false,
                 panelOpen: true,
               }
             : {}),
@@ -103,6 +114,20 @@ export const useNotesStore = create<NotesState>()(
                 selectedId: null,
                 searchOpen: false,
                 guideOpen: false,
+                settingsOpen: false,
+                panelOpen: true,
+              }
+            : {}),
+        }),
+      setSettingsOpen: (open) =>
+        set({
+          settingsOpen: open,
+          ...(open
+            ? {
+                selectedId: null,
+                searchOpen: false,
+                guideOpen: false,
+                devicesOpen: false,
                 panelOpen: true,
               }
             : {}),
@@ -127,6 +152,7 @@ export const useNotesStore = create<NotesState>()(
           searchOpen: false,
           guideOpen: false,
           devicesOpen: false,
+          settingsOpen: false,
         }));
         return id;
       },

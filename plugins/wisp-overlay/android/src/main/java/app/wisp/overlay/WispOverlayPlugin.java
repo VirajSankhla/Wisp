@@ -94,4 +94,16 @@ public class WispOverlayPlugin extends Plugin {
     public void resize(PluginCall call) {
         call.resolve();
     }
+
+    @PluginMethod
+    public void setLook(PluginCall call) {
+        int handleDp = call.getInt("handleDp", 44);
+        Context ctx = getContext();
+        ctx.getSharedPreferences(OverlayService.PREF, Context.MODE_PRIVATE)
+            .edit()
+            .putInt(OverlayService.PREF_HANDLE, handleDp)
+            .apply();
+        OverlayService.applyHandleDp(handleDp);
+        call.resolve();
+    }
 }
