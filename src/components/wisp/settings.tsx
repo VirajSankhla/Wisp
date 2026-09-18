@@ -100,8 +100,10 @@ export function SettingsPanel({ onBack }: { onBack: () => void }) {
           </section>
 
           <p className="text-xs text-subtle">
-            These stay on this device. Restart the edge tab after a size change
-            if the drop on the screen edge does not update.
+            These stay on this device. On Android, hide then enable the edge
+            tab if the drop size does not update. On laptop, tuck the panel —
+            the circular drop is the same control. Push it into the right edge
+            until it is a thin line.
           </p>
         </div>
       </div>

@@ -18,7 +18,9 @@
         "minWidth": 360,
         "minHeight": 560,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "alwaysOnTop": true,
+        "visible": true
       }
     ],
     "security": {

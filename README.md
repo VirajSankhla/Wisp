@@ -1,10 +1,20 @@
-# Wisp
+<p align="center">
+  <img src="screenshots/wisp-icon.png" width="96" height="96" alt="Wisp" />
+</p>
 
-**A tiny personal memory at the edge of the screen.**
+<h1 align="center">Wisp</h1>
 
-Write a heading. Tuck it away. Pull it back when you need it.
+<p align="center"><strong>A tiny personal memory at the edge of the screen.</strong></p>
 
-Wisp is **personal-first and local-first**. It works fully offline, with no account and no Wisp cloud. You can fork it, host it, or just use the installers.
+<p align="center">Write a heading. Tuck it away. Pull it back when you need it.</p>
+
+<p align="center">
+  <a href="https://github.com/VirajSankhla/Wisp/releases/latest"><img src="https://img.shields.io/github/v/release/VirajSankhla/Wisp?include_prereleases&label=latest" alt="release" /></a>
+  <a href="https://github.com/VirajSankhla/Wisp/releases"><img src="https://img.shields.io/github/downloads/VirajSankhla/Wisp/total?label=downloads" alt="downloads" /></a>
+  <a href="https://github.com/VirajSankhla/Wisp/stargazers"><img src="https://img.shields.io/github/stars/VirajSankhla/Wisp?style=flat" alt="stars" /></a>
+</p>
+
+Wisp is **personal-first and local-first**. Offline. No account. No Wisp cloud. Fonts, icons, and the flame animation all live in the app — the only network trip is the optional API you add for sync.
 
 ```
 N          new note
@@ -14,115 +24,117 @@ Esc        tuck it away
 
 The list is headings only. Tags stay hidden until you search them. Pin from the list or the editor — pinned notes sit at the top.
 
+<p align="center">
+  <img src="screenshots/qa-tucked.png" width="280" alt="Tucked to the edge" />
+  <img src="screenshots/qa-open.png" width="280" alt="Open panel" />
+  <img src="screenshots/qa-qr.png" width="280" alt="Pairing QR" />
+</p>
+
 ---
 
 ## Use it (no coding)
 
 Open Wisp in a browser. Notes stay on that device. That is enough.
 
-| Device | Install | Overlay over other apps |
+| Device | Install | Edge drop |
 | --- | --- | --- |
-| **Windows / Mac / Chromebook** | Chrome or Edge → install icon in the address bar, or **Install Wisp** | Desktop handle on the right. Browser / PWA is enough. |
-| **Android** | Chrome → **Install app**, **or** the `.apk` below | **Only the `.apk`** can sit over the home screen and other apps (game-bar). |
-| **iPhone / iPad** | **Safari** → Share → **Add to Home Screen** | Not possible. Apple does not allow a third-party overlay over other apps. |
+| **Windows** | [`.exe` from Releases](https://github.com/VirajSankhla/Wisp/releases) **or** Chrome → Install Wisp | Circular drop on the right of the window. Push it into the edge until it is a line. The window stays on top. |
+| **Mac / Chromebook** | Chrome or Edge → **Install Wisp** | Same drop, inside the window. |
+| **Android** | [`.apk`](https://github.com/VirajSankhla/Wisp/releases) (same droplet icon as the EXE) | **Over other apps** after Devices → Enable edge tab. Browser install cannot do this. |
+| **iPhone / iPad** | Safari → Share → **Add to Home Screen** | Not possible. Apple does not allow a third-party overlay. |
 
 No sign-up. No Google. No X.
 
 ---
 
-## `.apk` and `.exe` from GitHub
+## native-13 → this build
 
-You do not need the source. GitHub Actions builds the files.
+Only the last step:
+
+| | native-12 | now |
+| --- | --- | --- |
+| Overlay open | 2–3s hide while a new WebView loaded | WebView stays warm; list is instant after the first enable |
+| Overlay note | no delete | trash next to Headings |
+| Overlay size | jumped when a note opened | fixed box, content scrolls |
+| Pin | editor only | pin on every list row too |
+| Sizes | one size | Settings: Compact / Regular / Large, 3–5 overlay headings |
+| Laptop | tall +/drop/count tab | same circular droplet as Android; peek to a line |
+| Icons | APK used a different launcher | EXE droplet is the APK + in-app mark |
+| Fonts | Google Fonts over the network | system fonts, local flame animation |
+
+---
+
+## `.apk` and `.exe`
 
 1. Open **[Releases](https://github.com/VirajSankhla/Wisp/releases)**.
-2. **Android:** download `app-debug.apk` (you can rename it `Wisp.apk`). Enable *Install unknown apps*, then open it.
-3. **Windows:** download `Wisp_…_x64-setup.exe` and run it.
-4. If Releases looks empty, the build is still running under **[Actions](https://github.com/VirajSankhla/Wisp/actions)**.
+2. **Android:** `app-debug.apk` (rename to `Wisp.apk` if you want). Allow *Install unknown apps*.
+3. **Windows:** `Wisp_…_x64-setup.exe`.
+4. If Releases looks empty, the build is still on **[Actions](https://github.com/VirajSankhla/Wisp/actions)**.
 
-### Android edge tab (game-bar)
+### Android / Windows edge drop
 
-This is the whole-phone overlay. Browser install cannot do it.
+**Android:** Devices → **Enable edge tab** → allow *Display over other apps*. Leave Wisp. The droplet sits on the right of the *whole* phone.
 
-1. Install the `.apk`.
-2. Open Wisp → **Devices** → **Enable edge tab**.
-3. Allow **Display over other apps**.
-4. Leave Wisp. A small drop sits on the right of the *whole* phone.
-5. Push it into the edge until it is a thin line. Tap the drop for notes — **about four headings** show, then scroll. Tap a heading to edit. Trash deletes a mistaken note. Tap outside or **×** to hide.
-6. A quiet notification keeps it alive. Hide from there if you want it gone.
+**Windows EXE:** the same droplet sits on the right of the Wisp window (always on top). Click to open. Drag toward the edge until only a line remains.
 
-The overlay WebView stays loaded, so the second tap should be instant. Opening a note no longer resizes the window (content scrolls inside).
-
-**Settings** (gear in the app, not in the overlay): Compact / Regular / Large for the drop and bubbles, and 3 / 4 / 5 visible headings. Restart the edge tab if the drop size does not update.
-
-If something in the overlay fails, Wisp writes a **Wisp log** note (tag `wisp-log`) instead of blocking the screen.
+Settings (gear) change drop size and how many headings show before you scroll.
 
 ---
 
 ## Same notes on phone and laptop
 
-**You do not need an API for Wisp to work.** One device is the default.
+**You do not need an API.** One device is the default.
 
-There is no Wisp server behind the QR. Three ways to share:
+### Optional API (auto, any network)
 
-### 1. Optional API you control (auto, any network)
+Easiest free start: [jsonbin.io](https://jsonbin.io)
 
-Use this if you want both sides to keep matching over mobile data.
+1. Create a bin, leave it as `{}`. Copy the id and **X-Master-Key**.
+2. Devices → URL `https://api.jsonbin.io/v3/b/YOUR_BIN_ID` → header `X-Master-Key: YOUR_KEY` → **Save API**.
+3. **Show a code**. Scan on the other device. After that they match on cellular too.
 
-The API only stores an **encrypted blob**. Headings never go out in the clear.
+Payload is encrypted. Wisp does not host the bin.
 
-**Which API?** Anything that accepts **GET** and **PUT** of JSON. Wisp does not host one. Easiest free option:
-
-#### JSONBin (recommended to start)
-
-1. Open [jsonbin.io](https://jsonbin.io) and create a free account.
-2. **Create a bin**. Put `{}` in it and save. Copy the bin id.
-3. Open **API Keys** and copy the **X-Master-Key**.
-4. In Wisp → **Devices**:
-   - URL: `https://api.jsonbin.io/v3/b/YOUR_BIN_ID`
-   - Header: `X-Master-Key: YOUR_KEY`
-   - **Save API**
-5. **Show a code** on this device. Scan or paste on the other. After that they keep matching on cellular too.
-
-The free JSONBin tier is enough for a personal vault. Do not put the master key in a public README of *your* fork if that bin is private.
-
-#### Other hosts that work
-
-| Host | URL shape | Header |
+| Host | URL | Header |
 | --- | --- | --- |
-| [JSONBin](https://jsonbin.io) | `https://api.jsonbin.io/v3/b/<id>` | `X-Master-Key: …` |
-| [jsonstorage.net](https://jsonstorage.net) | `https://jsonstorage.net/api/items/<id>` | (none, or their token) |
-| Your own server / Cloudflare Worker | any `https://…` that GET/PUT JSON | whatever you require, one `Name: value` line |
+| JSONBin | `https://api.jsonbin.io/v3/b/<id>` | `X-Master-Key: …` |
+| jsonstorage.net | `https://jsonstorage.net/api/items/<id>` | optional |
+| Your server | any GET+PUT JSON `https://…` | one `Name: value` line |
 
-GitHub gists need PATCH, not PUT, so skip those unless you wrap them.
-
-Then **Show a code**. The QR is a `WISP2.…` invite (lock + URL). Or paste the same URL on both devices and only share a short `WISP.…` lock.
-
-### 2. Encrypted packet (no API)
-
-**Devices** → **Send notes** on the device that has the latest copy → **Receive notes** on the other. WhatsApp, AirDrop, USB, a file — anything that moves the packet.
-
-### 3. Stay on one device
-
-Do nothing. Notes live in that app’s storage. Backup JSON if you want a file on disk.
+No API? **Send notes / Receive notes** moves an encrypted packet by hand.
 
 ---
 
-## What the QR actually is
+## What the QR is
 
 Not a login. Not a Wisp database.
 
 | Code | Meaning |
 | --- | --- |
-| `WISP.…` | Short lock (about 70–80 characters, 5 minutes). Both devices derive the same local encryption key. |
-| `WISP2.…` | That lock **plus** your API URL (and optional header). Longer; meant for the QR. |
+| `WISP.…` | Short lock (~70–80 characters, 5 minutes). |
+| `WISP2.…` | That lock **plus** your API URL. |
 
-After pairing, the code is forgotten. The vault key stays on the device.
+---
+
+## Insights (this repo)
+
+Snapshot from GitHub on 17 Sep 2026 (traffic is the last 14 days GitHub reports):
+
+| | |
+| --- | --- |
+| Stars | 1 |
+| Forks | 0 |
+| Clones | 90 (35 unique machines) |
+| Views | 8 (2 unique visitors) |
+| Created | 8 Sep 2026 |
+
+Numbers move. Badges at the top stay live.
 
 ---
 
 ## Host it yourself
 
-No paid API, no OAuth, no database required.
+No paid API, no OAuth, no database.
 
 ```sh
 git clone https://github.com/VirajSankhla/Wisp.git
@@ -131,20 +143,12 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:8080`.
-
-Production-style:
+`http://localhost:8080`
 
 ```sh
 npm run build
 npx vite preview --host 0.0.0.0 --port 8080
 ```
-
-Deploy the build to any free static/Node host (Cloudflare Pages, Netlify, a home Pi). Do **not** set Google/X keys.
-
-Keep backups wherever you want (`D:\Wisp`, a USB stick). The live copy is on the device; the backup file is yours.
-
-### Docker
 
 ```sh
 docker build -t wisp .
@@ -153,50 +157,24 @@ docker run -p 8080:8080 wisp
 
 ---
 
-## Keyboard
-
-```
-N            new note
-/  or ⌘K     search
-#tag         filter by tag
-?            guide
-Esc          tuck / back
-```
-
-On a phone, swipe in from the right to open the panel (inside the app). The system-wide edge tab is Android `.apk` only.
-
----
-
-## Privacy
-
-- Notes live on the device first (`localStorage`: `wisp.notes.v1`, `wisp.vault.v1`).
-- A backup or packet moves because **you** saved or opened a file.
-- An optional API you add stores ciphertext only.
-- No analytics. No identity provider. No Wisp account.
-
-If Wisp hits a native fault, it appends to a **Wisp log** note on that device so you can see what happened.
-
----
-
 ## Develop
 
 ```sh
 npm install
-npm run dev          # http://localhost:8080
+npm run dev
 npm run typecheck
 npm test
 npm run lint
 npm run build
 ```
 
-Installers: `.github/workflows/release-native.yml` (Actions → **Build Wisp installers**).
-
 ```
-src/components/wisp/     panel, list, editor, overlay, devices, settings
-src/lib/notes/           model, store, search, backup, fault log
-src/lib/prefs.ts         overlay density and visible-row count
-src/lib/pairing/         lock, invite, encrypted snapshot, optional API
+src/components/wisp/     panel, list, overlay, desktop drop, settings
+src/lib/notes/           store, search, backup, fault log
+src/lib/prefs.ts         density + overlay rows
+src/lib/pairing/         lock, invite, optional API
 plugins/wisp-overlay/    Android edge tab
+src-tauri/icons/icon.png the droplet (EXE + APK launcher)
 ```
 
 ---

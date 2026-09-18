@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useRef, type TouchEvent } from "react";
-import { Plus } from "lucide-react";
 import { collapseNativeOverlay } from "@/lib/overlay";
 import { installFaultLogger } from "@/lib/notes/fault-log";
 import { startRemoteSync } from "@/lib/pairing/remote";
 import { useNotesStore } from "@/lib/notes/store";
 import { applyPrefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
+import { DesktopHandle } from "./desktop-handle";
 import { DesktopScene } from "./desktop-scene";
-import { WispMark } from "./mark";
 import { OverlaySheet } from "./overlay-sheet";
 import { WispPanel } from "./panel";
 
@@ -93,6 +92,10 @@ export function WispApp() {
         }
         if (s.guideOpen) {
           s.setGuideOpen(false);
+          return;
+        }
+        if (s.settingsOpen) {
+          s.setSettingsOpen(false);
           return;
         }
         if (s.selectedId) {
@@ -181,44 +184,7 @@ export function WispApp() {
             aria-label="Tuck Wisp to the edge"
             onClick={() => useNotesStore.getState().setPanelOpen(false)}
           />
-          <button
-            type="button"
-            aria-label="Pull Wisp from the edge"
-            onClick={() => useNotesStore.getState().setPanelOpen(true)}
-            className={cn(
-              "wisp-edge-rail absolute inset-y-0 right-0 z-20 w-5 md:w-3",
-              panelOpen ? "pointer-events-none opacity-0" : "opacity-100",
-            )}
-          />
-          <div
-            className={cn(
-              "wisp-handle absolute top-1/2 z-30 flex -translate-y-1/2 flex-col items-stretch overflow-hidden rounded-l-2xl bg-bg-elevated/92 text-accent shadow-panel backdrop-blur-md transition-[transform,opacity,right] duration-300 ease-smooth",
-              "right-[max(0.35rem,env(safe-area-inset-right))]",
-              panelOpen
-                ? "pointer-events-none translate-x-[120%] opacity-0"
-                : "translate-x-0 opacity-100",
-            )}
-          >
-            <button
-              type="button"
-              onClick={() => useNotesStore.getState().createNote()}
-              aria-label="New note"
-              className="grid h-12 w-12 place-items-center hover:bg-fg/6"
-            >
-              <Plus className="size-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => useNotesStore.getState().setPanelOpen(true)}
-              aria-label="Open Wisp"
-              className="grid h-16 w-12 place-items-center hover:bg-fg/6"
-            >
-              <WispMark className="size-5" />
-            </button>
-            <p className="pb-2.5 text-center text-xs tabular-nums text-muted">
-              {noteCount}
-            </p>
-          </div>
+          <DesktopHandle panelOpen={panelOpen} noteCount={noteCount} />
         </>
       )}
 

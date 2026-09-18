@@ -40,10 +40,8 @@ function shellHtml() {
     <title>Wisp</title>
     <meta name="theme-color" content="#12110F" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="icon" type="image/png" href="./wisp-icon.png" />
     <link rel="stylesheet" href="./assets/${css}" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" />
   </head>
   <body>
     <script type="module" src="./assets/${js}"></script>

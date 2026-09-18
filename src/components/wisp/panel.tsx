@@ -65,7 +65,7 @@ export function WispPanel({
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex items-center gap-2 px-3 pt-3 pb-2">
         <div className="flex min-w-0 items-center gap-2 px-1">
-          <WispMark className="size-5 shrink-0" />
+          <WispMark animate className="size-5 shrink-0" />
           <span className="font-display text-lg tracking-tight">Wisp</span>
         </div>
         <div className="ml-auto flex items-center gap-1">

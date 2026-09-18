@@ -81,7 +81,7 @@ export function OverlaySheet() {
         >
           <X className="size-3.5" />
         </button>
-        <WispMark className="mx-1 size-3.5 text-accent" />
+        <WispMark animate className="mx-1 size-3.5" />
         <button
           type="button"
           onClick={() => useNotesStore.getState().createNote()}

@@ -82,6 +82,7 @@ jobs:
       - run: npm ci
       - run: npx cap add android
       - run: npx cap sync android
+      - run: node scripts/sync-android-icons.mjs
       - name: Assemble debug APK
         working-directory: android
         run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
