@@ -106,4 +106,38 @@ public class WispOverlayPlugin extends Plugin {
         OverlayService.applyHandleDp(handleDp);
         call.resolve();
     }
+
+    @PluginMethod
+    public void readStore(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("value", OverlayStore.read(getContext(), call.getString("name", "")));
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void writeStore(PluginCall call) {
+        OverlayStore.write(
+            getContext(),
+            call.getString("name", ""),
+            call.getString("json", "")
+        );
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void storeRev(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("value", OverlayHub.rev);
+        call.resolve(ret);
+    }
+
+    @Override
+    public void handleOnResume() {
+        OverlayService.setAppForeground(true);
+    }
+
+    @Override
+    public void handleOnPause() {
+        OverlayService.setAppForeground(false);
+    }
 }

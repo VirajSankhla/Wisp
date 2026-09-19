@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { readNativeStore, writeNativeStore } from "../native-store.ts";
 import { mergeNotes } from "./merge.ts";
 import { SAMPLE_IDS, sampleNotes } from "./samples.ts";
 import type { Note } from "./types.ts";
@@ -241,7 +242,25 @@ export const useNotesStore = create<NotesState>()(
     }),
     {
       name: "wisp.notes.v1",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => ({
+        getItem: (name) => {
+          try {
+            const native = readNativeStore(name);
+            if (native) return native;
+            return localStorage.getItem(name);
+          } catch {
+            return localStorage.getItem(name);
+          }
+        },
+        setItem: (name, value) => {
+          localStorage.setItem(name, value);
+          writeNativeStore(name, value);
+        },
+        removeItem: (name) => {
+          localStorage.removeItem(name);
+          writeNativeStore(name, "");
+        },
+      })),
       partialize: (state) => ({
         notes: state.notes,
         panelOpen: state.panelOpen,

@@ -1,8 +1,11 @@
+import { readNativeStore, writeNativeStore } from "./native-store";
+
 export type Density = "compact" | "regular" | "large";
 
 export type Prefs = {
   density: Density;
   overlayRows: 3 | 4 | 5;
+  desktopOverlay?: boolean;
 };
 
 const KEY = "wisp.prefs.v1";
@@ -10,6 +13,7 @@ const KEY = "wisp.prefs.v1";
 const DEFAULTS: Prefs = {
   density: "regular",
   overlayRows: 4,
+  desktopOverlay: false,
 };
 
 export const DENSITY_META: Record<
@@ -21,27 +25,51 @@ export const DENSITY_META: Record<
   large: { label: "Large", handle: 56, heading: 18, pad: 10 },
 };
 
+export const PREFS_KEY = KEY;
+
+const listeners = new Set<(prefs: Prefs) => void>();
+
+function parsePrefs(raw: unknown): Prefs {
+  const parsed = (raw ?? {}) as Partial<Prefs>;
+  const density: Density =
+    parsed.density === "compact" || parsed.density === "large"
+      ? parsed.density
+      : "regular";
+  const overlayRows: 3 | 4 | 5 =
+    parsed.overlayRows === 3 || parsed.overlayRows === 5 ? parsed.overlayRows : 4;
+  return {
+    density,
+    overlayRows,
+    desktopOverlay: Boolean(parsed.desktopOverlay),
+  };
+}
+
 export function loadPrefs(): Prefs {
   if (typeof localStorage === "undefined") return { ...DEFAULTS };
   try {
+    const native = readNativeStore(KEY);
+    if (native) return parsePrefs(JSON.parse(native));
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...DEFAULTS };
-    const parsed = JSON.parse(raw) as Partial<Prefs>;
-    const density: Density =
-      parsed.density === "compact" || parsed.density === "large"
-        ? parsed.density
-        : "regular";
-    const overlayRows: 3 | 4 | 5 =
-      parsed.overlayRows === 3 || parsed.overlayRows === 5 ? parsed.overlayRows : 4;
-    return { density, overlayRows };
+    return parsePrefs(JSON.parse(raw));
   } catch {
     return { ...DEFAULTS };
   }
 }
 
 export function savePrefs(prefs: Prefs) {
-  localStorage.setItem(KEY, JSON.stringify(prefs));
+  const json = JSON.stringify(prefs);
+  localStorage.setItem(KEY, json);
+  writeNativeStore(KEY, json);
   applyPrefs(prefs);
+  listeners.forEach((fn) => fn(prefs));
+}
+
+export function subscribePrefs(fn: (prefs: Prefs) => void) {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
 }
 
 export function overlayListMax(prefs: Prefs) {

@@ -10,3 +10,7 @@ src-tauri/target/
 dist/
 .DS_Store
 artifacts/
+.grok/
+AGENTS.md
+CLAUDE.md
+attachments/

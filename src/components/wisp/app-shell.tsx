@@ -3,9 +3,11 @@
 import { useEffect, useRef, type TouchEvent } from "react";
 import { collapseNativeOverlay } from "@/lib/overlay";
 import { installFaultLogger } from "@/lib/notes/fault-log";
+import { startStoreBridge, pullNativeNotes } from "@/lib/notes/bridge";
 import { startRemoteSync } from "@/lib/pairing/remote";
 import { useNotesStore } from "@/lib/notes/store";
-import { applyPrefs } from "@/lib/prefs";
+import { applyPrefs, loadPrefs } from "@/lib/prefs";
+import { isTauri, startDesktopOverlay } from "@/lib/desktop-overlay";
 import { cn } from "@/lib/utils";
 import { DesktopHandle } from "./desktop-handle";
 import { DesktopScene } from "./desktop-scene";
@@ -54,15 +56,17 @@ export function WispApp() {
   useEffect(() => {
     const unsub = useNotesStore.persist.onFinishHydration(() => {
       const s = useNotesStore.getState();
-      s.seedIfEmpty();
-      s.setHasHydrated(true);
-      const launch = consumeLaunchQuery();
-      if (launch.overlay) {
-        document.documentElement.classList.add("wisp-overlay-mode");
-        s.setPanelOpen(true);
-      }
-      if (launch.fresh) s.createNote();
-      else if (launch.open) s.setPanelOpen(true);
+      void pullNativeNotes().finally(() => {
+        const launch = consumeLaunchQuery();
+        if (!launch.overlay) s.seedIfEmpty();
+        s.setHasHydrated(true);
+        if (launch.overlay) {
+          document.documentElement.classList.add("wisp-overlay-mode");
+          s.setPanelOpen(true);
+        }
+        if (launch.fresh) s.createNote();
+        else if (launch.open) s.setPanelOpen(true);
+      });
     });
     void useNotesStore.persist.rehydrate();
     return unsub;
@@ -70,6 +74,14 @@ export function WispApp() {
 
   useEffect(() => {
     applyPrefs();
+    if (isTauri() && loadPrefs().desktopOverlay) {
+      void startDesktopOverlay().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    return startStoreBridge();
   }, []);
 
   useEffect(() => {

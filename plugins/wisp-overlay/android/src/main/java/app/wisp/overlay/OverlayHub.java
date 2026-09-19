@@ -9,6 +9,7 @@ public final class OverlayHub {
     public static final int PORT = 17892;
     public static volatile String snapshot = "";
     public static volatile String incoming = "";
+    public static volatile long rev = 0;
 
     private OverlayHub() {}
 
@@ -26,6 +27,10 @@ public final class OverlayHub {
         String next = incoming;
         incoming = "";
         return next == null ? "" : next;
+    }
+
+    public static synchronized void bump() {
+        rev += 1;
     }
 
     public static String ipv4() {

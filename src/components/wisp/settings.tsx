@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { isAndroidNative, WispOverlay } from "@/lib/overlay";
+import { isTauri, setDesktopOverlayLook } from "@/lib/desktop-overlay";
 import {
   DENSITY_META,
   loadPrefs,
@@ -50,10 +51,11 @@ export function SettingsPanel({ onBack }: { onBack: () => void }) {
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 text-sm leading-relaxed text-muted">
         <div className="space-y-6">
           <section className="space-y-3">
-            <p className="text-fg">Size</p>
+            <p className="text-fg">Edge drop size</p>
             <p className="text-xs text-subtle">
-              Compact for a small phone, large if the drop is hard to tap.
-              Applies to the edge tab and the overlay bubbles.
+              Size of the circular drop on the screen edge, and the heading
+              type in the overlay. Applies immediately on this device — leave
+              the app to see the drop on the edge.
             </p>
             <div className="flex flex-wrap gap-2">
               {DENSITIES.map((id) => (
@@ -77,8 +79,8 @@ export function SettingsPanel({ onBack }: { onBack: () => void }) {
           <section className="space-y-3">
             <p className="text-fg">Headings in the overlay</p>
             <p className="text-xs text-subtle">
-              How many headings show before you scroll. The window stays that
-              height so opening a note does not jump.
+              How many headings show before the overlay list scrolls. The
+              overlay and this app share the same notes on this device.
             </p>
             <div className="flex flex-wrap gap-2">
               {ROWS.map((n) => (
@@ -99,12 +101,16 @@ export function SettingsPanel({ onBack }: { onBack: () => void }) {
             </div>
           </section>
 
-          <p className="text-xs text-subtle">
-            These stay on this device. On Android, hide then enable the edge
-            tab if the drop size does not update. On laptop, tuck the panel —
-            the circular drop is the same control. Push it into the right edge
-            until it is a thin line.
-          </p>
+          <section className="space-y-2">
+            <p className="text-fg">Where to enable the overlay</p>
+            <p className="text-xs text-subtle">
+              Open Devices (phone icon). On Android, enable the edge tab and
+              allow “Display over other apps.” The drop hides while you are
+              inside Wisp, then sits on the right edge of the rest of the
+              phone. On Windows, use the Wisp installer and enable the edge
+              tab there — a browser window cannot draw over other programs.
+            </p>
+          </section>
         </div>
       </div>
     </div>
@@ -112,7 +118,11 @@ export function SettingsPanel({ onBack }: { onBack: () => void }) {
 }
 
 function applyNative(prefs: Prefs) {
-  if (!isAndroidNative()) return;
   const handleDp = DENSITY_META[prefs.density].handle;
-  void WispOverlay.setLook({ handleDp }).catch(() => {});
+  if (isAndroidNative()) {
+    void WispOverlay.setLook({ handleDp }).catch(() => {});
+  }
+  if (isTauri()) {
+    void setDesktopOverlayLook(handleDp).catch(() => {});
+  }
 }

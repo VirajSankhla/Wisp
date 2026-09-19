@@ -22,4 +22,11 @@ export class WispOverlayWeb extends WebPlugin implements WispOverlayPlugin {
   }
   async resize(): Promise<void> {}
   async setLook(): Promise<void> {}
+  async readStore(): Promise<{ value: string }> {
+    return { value: "" };
+  }
+  async writeStore(): Promise<void> {}
+  async storeRev(): Promise<{ value: number }> {
+    return { value: 0 };
+  }
 }

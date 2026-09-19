@@ -9,6 +9,7 @@
     "beforeBuildCommand": "node scripts/prepare-native-dist.mjs"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",
@@ -19,7 +20,7 @@
         "minHeight": 560,
         "resizable": true,
         "fullscreen": false,
-        "alwaysOnTop": true,
+        "alwaysOnTop": false,
         "visible": true
       }
     ],

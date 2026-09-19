@@ -51,16 +51,16 @@ export function AndroidOverlayCard() {
 
   return (
     <div className="space-y-3 rounded-2xl bg-fg/4 px-3 py-3">
-      <p className="text-fg">Over other apps (Android)</p>
+      <p className="text-fg">Edge tab (this phone)</p>
       <p>
-        This is the game-bar version. A tab sits on the right edge of the
-        whole phone — home screen, Chrome, a game. Tap it to pull Wisp out.
-        iPhone cannot do this.
+        Places a drop on the right edge of Android, over the home screen and
+        other apps. It hides while Wisp itself is open, so you are not looking
+        at two copies of the same notes. Leave Wisp to use it.
       </p>
       <p className="text-xs text-subtle">
         {allowed
           ? running
-            ? "The tab is live. A quiet notification keeps it there."
+            ? "Enabled. Notes in the overlay are the same notes as in this app."
             : "Permission is granted. Enable the tab."
           : "Android needs “Display over other apps” for Wisp."}
       </p>

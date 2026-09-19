@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, ChevronLeft, Copy, QrCode, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { AndroidOverlayCard } from "@/components/wisp/android-overlay";
+import { DesktopOverlayCard } from "@/components/wisp/desktop-overlay";
 import { Button } from "@/components/ui/button";
 import { useNotesStore } from "@/lib/notes/store";
 import {
@@ -229,6 +230,7 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
               control. Notes stay encrypted on the way.
             </p>
             <AndroidOverlayCard />
+            <DesktopOverlayCard />
             <div className="space-y-2">
               <p className="text-xs font-medium text-fg">Which API</p>
               <p className="text-xs text-subtle">

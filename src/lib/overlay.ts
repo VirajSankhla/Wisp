@@ -1,6 +1,11 @@
 import { Capacitor } from "@capacitor/core";
 import { WispOverlay } from "wisp-overlay";
 import { isNativeBridgeNoise, logWispFault } from "@/lib/notes/fault-log";
+import {
+  collapseDesktopOverlay,
+  isTauri,
+  resizeDesktopOverlay,
+} from "./desktop-overlay";
 
 type NativeBridge = {
   collapse?: () => void;
@@ -23,6 +28,10 @@ export function isAndroidNative() {
 }
 
 export function collapseNativeOverlay() {
+  if (isTauri()) {
+    void collapseDesktopOverlay().catch(() => {});
+    return;
+  }
   try {
     native()?.collapse?.();
   } catch (err) {
@@ -32,6 +41,10 @@ export function collapseNativeOverlay() {
 
 let resizeTimer = 0;
 let overlayLocked = false;
+
+export function unlockOverlaySize() {
+  overlayLocked = false;
+}
 
 export function reportOverlaySize(el: HTMLElement) {
   if (overlayLocked) return;
@@ -56,10 +69,14 @@ export function reportOverlaySize(el: HTMLElement) {
 
 export function revealNativeOverlay(el: HTMLElement) {
   overlayLocked = true;
-  const bridge = native();
   const r = el.getBoundingClientRect();
   const width = Math.max(1, Math.ceil(r.width));
   const height = Math.max(1, Math.ceil(r.height));
+  if (isTauri()) {
+    void resizeDesktopOverlay(width, height).catch(() => {});
+    return;
+  }
+  const bridge = native();
   try {
     if (typeof bridge?.ready === "function") {
       bridge.ready(width, height);

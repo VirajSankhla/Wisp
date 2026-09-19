@@ -41,6 +41,7 @@ public class OverlayService extends Service {
     private static final String CHANNEL = "wisp-edge";
     private static final int NOTIF = 71;
     private static volatile boolean running = false;
+    private static volatile boolean appForeground = true;
     private static OverlayService instance;
 
     private WindowManager windowManager;
@@ -66,7 +67,24 @@ public class OverlayService extends Service {
 
     public static void applyHandleDp(int ignored) {
         OverlayService s = instance;
-        if (s != null) s.handleSizeChanged();
+        if (s == null) return;
+        s.sizeLocked = false;
+        s.handleSizeChanged();
+    }
+
+    public static void setAppForeground(boolean foreground) {
+        appForeground = foreground;
+        OverlayService s = instance;
+        if (s != null) s.onAppForeground(foreground);
+    }
+
+    private void onAppForeground(boolean foreground) {
+        if (foreground) {
+            if (expanded) collapse();
+            detach(handleView);
+        } else if (!expanded) {
+            showHandle();
+        }
     }
 
     @Override
@@ -87,7 +105,7 @@ public class OverlayService extends Service {
         }
         peeked = getSharedPreferences(PREF, MODE_PRIVATE).getBoolean(PREF_PEEK, false);
         handleY = getSharedPreferences(PREF, MODE_PRIVATE).getInt(PREF_Y, -1);
-        showHandle();
+        if (!appForeground) showHandle();
         ensurePanel(false);
     }
 
@@ -155,7 +173,7 @@ public class OverlayService extends Service {
         if (!expanded) return;
         expanded = false;
         detach(panelWeb);
-        showHandle();
+        if (!appForeground) showHandle();
     }
 
     private void expand(boolean freshNote) {

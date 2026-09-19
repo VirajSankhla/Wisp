@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
-import { collapseNativeOverlay, reportOverlaySize, revealNativeOverlay } from "@/lib/overlay";
+import { collapseNativeOverlay, reportOverlaySize, revealNativeOverlay, unlockOverlaySize } from "@/lib/overlay";
 import { FAULT_LOG_ID } from "@/lib/notes/fault-log";
 import { visibleNotes } from "@/lib/notes/search";
 import { useNotesStore } from "@/lib/notes/store";
-import { applyPrefs } from "@/lib/prefs";
+import { applyPrefs, loadPrefs, overlayListMax, subscribePrefs, type Prefs } from "@/lib/prefs";
 import { cn } from "@/lib/utils";
 import { WispMark } from "./mark";
 
@@ -19,6 +19,8 @@ export function OverlaySheet() {
   const selectedId = useNotesStore((s) => s.selectedId);
   const hasHydrated = useNotesStore((s) => s.hasHydrated);
   const selected = selectedId ? notes[selectedId] : undefined;
+  const [prefs, setPrefs] = useState<Prefs>(() => loadPrefs());
+  const listMax = overlayListMax(prefs);
   const list = useMemo(
     () =>
       visibleNotes(notes, "", null)
@@ -28,10 +30,31 @@ export function OverlaySheet() {
   );
 
   useEffect(() => {
-    applyPrefs();
+    applyPrefs(prefs);
+    const unsub = subscribePrefs((next) => {
+      setPrefs(next);
+      applyPrefs(next);
+      unlockOverlaySize();
+    });
+    const id = window.setInterval(() => {
+      const next = loadPrefs();
+      setPrefs((prev) => {
+        if (
+          prev.density === next.density &&
+          prev.overlayRows === next.overlayRows
+        ) {
+          return prev;
+        }
+        applyPrefs(next);
+        unlockOverlaySize();
+        return next;
+      });
+    }, 400);
     const w = window as Window & { __wispCreateNote?: () => void };
     w.__wispCreateNote = () => useNotesStore.getState().createNote();
     return () => {
+      unsub();
+      window.clearInterval(id);
       delete w.__wispCreateNote;
     };
   }, []);
@@ -54,7 +77,7 @@ export function OverlaySheet() {
     };
     const id = requestAnimationFrame(() => requestAnimationFrame(send));
     return () => cancelAnimationFrame(id);
-  }, [hasHydrated]);
+  }, [hasHydrated, listMax, prefs.density]);
 
   function close() {
     useNotesStore.getState().setSelectedId(null);
@@ -104,11 +127,12 @@ export function OverlaySheet() {
           }
           onBack={() => useNotesStore.getState().setSelectedId(null)}
           onDelete={removeSelected}
+          listMax={listMax}
         />
       ) : (
         <div
           className="flex w-full max-w-[264px] flex-col items-end gap-1.5 overflow-y-auto overscroll-contain"
-          style={{ maxHeight: "var(--overlay-list-max, 170px)" }}
+          style={{ maxHeight: listMax }}
         >
           {list.length === 0 ? (
             <div
@@ -152,6 +176,7 @@ function OverlayNote({
   onBody,
   onBack,
   onDelete,
+  listMax,
 }: {
   heading: string;
   body: string;
@@ -159,11 +184,12 @@ function OverlayNote({
   onBody: (value: string) => void;
   onBack: () => void;
   onDelete: () => void;
+  listMax: number;
 }) {
   return (
     <div
       className="flex w-full max-w-[264px] flex-col items-end gap-1.5 overflow-y-auto overscroll-contain"
-      style={{ maxHeight: "var(--overlay-list-max, 170px)" }}
+      style={{ maxHeight: listMax }}
     >
       <div className="flex w-full items-center justify-end gap-1">
         <button

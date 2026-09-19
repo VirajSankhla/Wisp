@@ -45,4 +45,19 @@ public class WispNativeBridge {
     public String localAddress() {
         return OverlayHub.ipv4();
     }
+
+    @JavascriptInterface
+    public String readStore(String name) {
+        return OverlayStore.read(service.getApplicationContext(), name);
+    }
+
+    @JavascriptInterface
+    public void writeStore(String name, String json) {
+        OverlayStore.write(service.getApplicationContext(), name, json);
+    }
+
+    @JavascriptInterface
+    public double storeRev() {
+        return OverlayHub.rev;
+    }
 }

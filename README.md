@@ -38,29 +38,24 @@ Open Wisp in a browser. Notes stay on that device. That is enough.
 
 | Device | Install | Edge drop |
 | --- | --- | --- |
-| **Windows** | [`.exe` from Releases](https://github.com/VirajSankhla/Wisp/releases) **or** Chrome → Install Wisp | Circular drop on the right of the window. Push it into the edge until it is a line. The window stays on top. |
-| **Mac / Chromebook** | Chrome or Edge → **Install Wisp** | Same drop, inside the window. |
-| **Android** | [`.apk`](https://github.com/VirajSankhla/Wisp/releases) (same droplet icon as the EXE) | **Over other apps** after Devices → Enable edge tab. Browser install cannot do this. |
+| **Windows** | [`.exe` from Releases](https://github.com/VirajSankhla/Wisp/releases) | Devices → **Enable edge tab**. Always-on-top drop over other windows. A browser install cannot do this. |
+| **Mac** | build from source (Tauri) | Same edge tab as Windows. |
+| **Android** | [`.apk`](https://github.com/VirajSankhla/Wisp/releases) | Devices → **Enable edge tab** → allow *Display over other apps*. Hides while Wisp is open; appears when you leave. |
 | **iPhone / iPad** | Safari → Share → **Add to Home Screen** | Not possible. Apple does not allow a third-party overlay. |
 
 No sign-up. No Google. No X.
 
 ---
 
-## native-13 → this build
+## native-14 → this build
 
-Only the last step:
-
-| | native-12 | now |
+| | native-14 | now |
 | --- | --- | --- |
-| Overlay open | 2–3s hide while a new WebView loaded | WebView stays warm; list is instant after the first enable |
-| Overlay note | no delete | trash next to Headings |
-| Overlay size | jumped when a note opened | fixed box, content scrolls |
-| Pin | editor only | pin on every list row too |
-| Sizes | one size | Settings: Compact / Regular / Large, 3–5 overlay headings |
-| Laptop | tall +/drop/count tab | same circular droplet as Android; peek to a line |
-| Icons | APK used a different launcher | EXE droplet is the APK + in-app mark |
-| Fonts | Google Fonts over the network | system fonts, local flame animation |
+| Overlay vs app notes | Two separate notebooks | Same notes on this device (shared on disk) |
+| Overlay over Wisp | Floated on top of the app | Hides while you are inside Wisp; returns when you leave |
+| 3 / 4 / 5 headings | Did not apply in the overlay | Applies live |
+| Drop size | Needed tap in / tap out | Applies as soon as the drop is visible |
+| Windows | Drop only inside the Wisp window | Installer edge tab over other windows (not exclusive-fullscreen games) |
 
 ---
 
@@ -75,9 +70,9 @@ Only the last step:
 
 **Android:** Devices → **Enable edge tab** → allow *Display over other apps*. Leave Wisp. The droplet sits on the right of the *whole* phone.
 
-**Windows EXE:** the same droplet sits on the right of the Wisp window (always on top). Click to open. Drag toward the edge until only a line remains.
+The drop hides while Wisp is open (you already have the full list). Leave the app: the drop sits on the right. Notes in the overlay are the same notes as in the app.
 
-Settings (gear) change drop size and how many headings show before you scroll.
+Settings (gear): Compact / Regular / Large for the drop, and 3 / 4 / 5 visible headings.
 
 ---
 
