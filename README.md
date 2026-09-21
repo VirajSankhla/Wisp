@@ -47,15 +47,14 @@ No sign-up. No Google. No X.
 
 ---
 
-## native-14 → this build
+## native-15 → this build
 
-| | native-14 | now |
+| | native-15 | now |
 | --- | --- | --- |
-| Overlay vs app notes | Two separate notebooks | Same notes on this device (shared on disk) |
-| Overlay over Wisp | Floated on top of the app | Hides while you are inside Wisp; returns when you leave |
-| 3 / 4 / 5 headings | Did not apply in the overlay | Applies live |
-| Drop size | Needed tap in / tap out | Applies as soon as the drop is visible |
-| Windows | Drop only inside the Wisp window | Installer edge tab over other windows (not exclusive-fullscreen games) |
+| Overlay notes | Did not appear in the app | Shared file + live push/pull; overlay injects on open |
+| App notes | Overlay kept its own copy | Same notebook both ways |
+| Overlay open | Slow software WebView, waited to hydrate | Hardware layer, panel stays warm (hidden, not destroyed), notes injected immediately |
+| Icon | Dark droplet, easy to lose on a dark home screen | White flame on dark tile, APK and EXE |
 
 ---
 

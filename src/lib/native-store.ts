@@ -55,3 +55,15 @@ export function nativeStoreRev(): number {
     return -1;
   }
 }
+
+export async function nativeStoreRevAsync(): Promise<number> {
+  const sync = nativeStoreRev();
+  if (sync >= 0 && bridge()) return sync;
+  if (!Capacitor.isNativePlatform()) return -1;
+  try {
+    const result = await WispOverlay.storeRev();
+    return typeof result.value === "number" ? result.value : -1;
+  } catch {
+    return -1;
+  }
+}

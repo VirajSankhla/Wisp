@@ -134,6 +134,14 @@ public class WispOverlayPlugin extends Plugin {
     @Override
     public void handleOnResume() {
         OverlayService.setAppForeground(true);
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().evaluateJavascript(
+                    "window.dispatchEvent(new Event('wisp-native-sync'));",
+                    null
+                );
+            }
+        } catch (Exception ignored) {}
     }
 
     @Override

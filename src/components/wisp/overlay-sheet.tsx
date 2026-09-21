@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
-import { collapseNativeOverlay, reportOverlaySize, revealNativeOverlay, unlockOverlaySize } from "@/lib/overlay";
+import { collapseNativeOverlay, revealNativeOverlay, unlockOverlaySize } from "@/lib/overlay";
 import { FAULT_LOG_ID } from "@/lib/notes/fault-log";
 import { visibleNotes } from "@/lib/notes/search";
 import { useNotesStore } from "@/lib/notes/store";
@@ -61,23 +61,18 @@ export function OverlaySheet() {
 
   useEffect(() => {
     const el = rootRef.current;
-    if (!el || !hasHydrated) return;
-    let revealed = false;
+    if (!el) return;
     const send = () => {
       try {
-        if (!revealed) {
-          revealed = true;
-          revealNativeOverlay(el);
-        } else {
-          reportOverlaySize(el);
-        }
+        revealNativeOverlay(el);
       } catch {
         /* native window stays at last size */
       }
     };
-    const id = requestAnimationFrame(() => requestAnimationFrame(send));
+    send();
+    const id = requestAnimationFrame(send);
     return () => cancelAnimationFrame(id);
-  }, [hasHydrated, listMax, prefs.density]);
+  }, [listMax, prefs.density, hasHydrated, list.length]);
 
   function close() {
     useNotesStore.getState().setSelectedId(null);
@@ -115,7 +110,7 @@ export function OverlaySheet() {
         </button>
       </div>
 
-      {!hasHydrated ? null : selected && !selected.deletedAt ? (
+      {selected && !selected.deletedAt ? (
         <OverlayNote
           heading={selected.heading}
           body={selected.body}

@@ -105,8 +105,8 @@ public class OverlayService extends Service {
         }
         peeked = getSharedPreferences(PREF, MODE_PRIVATE).getBoolean(PREF_PEEK, false);
         handleY = getSharedPreferences(PREF, MODE_PRIVATE).getInt(PREF_Y, -1);
-        if (!appForeground) showHandle();
         ensurePanel(false);
+        if (!appForeground) showHandle();
     }
 
     @Override
@@ -172,8 +172,15 @@ public class OverlayService extends Service {
     public void collapse() {
         if (!expanded) return;
         expanded = false;
-        detach(panelWeb);
+        pullNotesFromPanel();
+        hidePanel();
         if (!appForeground) showHandle();
+    }
+
+    private void hidePanel() {
+        if (panelWeb == null) return;
+        panelWeb.setVisibility(View.GONE);
+        panelWeb.setAlpha(0f);
     }
 
     private void expand(boolean freshNote) {
@@ -181,10 +188,12 @@ public class OverlayService extends Service {
         expanded = true;
         ensurePanel(freshNote);
         attachPanel();
-        if (panelReady) {
-            if (panelWeb != null) panelWeb.setAlpha(1f);
-            detach(handleView);
+        pushNotesToPanel();
+        if (panelWeb != null) {
+            panelWeb.setVisibility(View.VISIBLE);
+            panelWeb.setAlpha(1f);
         }
+        detach(handleView);
     }
 
     private void showHandle() {
@@ -341,8 +350,9 @@ public class OverlayService extends Service {
         Context ctx = getApplicationContext();
         WebView web = new WebView(ctx);
         web.setBackgroundColor(Color.TRANSPARENT);
-        web.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        web.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         web.setAlpha(0f);
+        web.setVisibility(View.GONE);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
@@ -360,8 +370,14 @@ public class OverlayService extends Service {
             @Override
             public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
+                String boot = org.json.JSONObject.quote(
+                    OverlayStore.read(getApplicationContext(), "wisp.notes.v1")
+                );
                 view.evaluateJavascript(
-                    "document.documentElement.classList.add('wisp-overlay-mode');window.CapacitorCustomPlatform={name:'web'};",
+                    "document.documentElement.classList.add('wisp-overlay-mode');" +
+                    "window.CapacitorCustomPlatform={name:'web'};" +
+                    "window.__WISP_BOOT_NOTES__=" + boot + ";" +
+                    "window.dispatchEvent(new Event('wisp-boot-notes'));",
                     null
                 );
             }
@@ -370,7 +386,9 @@ public class OverlayService extends Service {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 panelReady = true;
+                pushNotesToPanel();
                 if (expanded) {
+                    view.setVisibility(View.VISIBLE);
                     view.setAlpha(1f);
                     detach(handleView);
                 }
@@ -404,9 +422,43 @@ public class OverlayService extends Service {
 
     private void attachPanel() {
         if (panelWeb == null || windowManager == null) return;
-        if (panelWeb.getParent() != null) return;
-        panelWeb.setAlpha(panelReady ? 1f : 0f);
-        windowManager.addView(panelWeb, panelParams());
+        panelWeb.setVisibility(View.VISIBLE);
+        panelWeb.setAlpha(1f);
+        if (panelWeb.getParent() == null) {
+            windowManager.addView(panelWeb, panelParams());
+        } else {
+            try {
+                windowManager.updateViewLayout(panelWeb, panelParams());
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private void pushNotesToPanel() {
+        if (panelWeb == null) return;
+        String boot = org.json.JSONObject.quote(
+            OverlayStore.read(getApplicationContext(), "wisp.notes.v1")
+        );
+        panelWeb.evaluateJavascript(
+            "window.__WISP_BOOT_NOTES__=" + boot +
+                ";window.dispatchEvent(new Event('wisp-boot-notes'));",
+            null
+        );
+    }
+
+    private void pullNotesFromPanel() {
+        if (panelWeb == null) return;
+        panelWeb.evaluateJavascript(
+            "(function(){try{return localStorage.getItem('wisp.notes.v1')||''}catch(e){return ''}})()",
+            value -> {
+                if (value == null || "null".equals(value) || value.isEmpty()) return;
+                try {
+                    String json = new org.json.JSONTokener(value).nextValue().toString();
+                    if (json != null && !json.isEmpty() && !"null".equals(json)) {
+                        OverlayStore.write(getApplicationContext(), "wisp.notes.v1", json);
+                    }
+                } catch (Exception ignored) {}
+            }
+        );
     }
 
     private WindowManager.LayoutParams panelParams() {
