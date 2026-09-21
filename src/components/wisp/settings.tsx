@@ -105,10 +105,11 @@ export function SettingsPanel({ onBack }: { onBack: () => void }) {
             <p className="text-fg">Where to enable the overlay</p>
             <p className="text-xs text-subtle">
               Open Devices (phone icon). On Android, enable the edge tab and
-              allow “Display over other apps.” The drop hides while you are
-              inside Wisp, then sits on the right edge of the rest of the
-              phone. On Windows, use the Wisp installer and enable the edge
-              tab there — a browser window cannot draw over other programs.
+              allow “Display over other apps.” The drop stays on the right
+              even while you are in Wisp. Notes you create in either place
+              show up in both. On Windows, use the Wisp installer and enable
+              the edge tab there — a browser window cannot draw over other
+              programs.
             </p>
           </section>
         </div>

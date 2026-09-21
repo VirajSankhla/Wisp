@@ -168,8 +168,16 @@ fn overlay_set_look(app: AppHandle, handle: f64) -> Result<(), String> {
         s.handle = handle.clamp(28.0, 72.0);
     }
     if let Some(win) = app.get_webview_window(OVERLAY) {
-        let (w, h) = drop_size();
-        size_window(&win, w, h)?;
+        let scale = win.scale_factor().unwrap_or(1.0);
+        let logical_w = win
+            .inner_size()
+            .map(|s| s.width as f64 / scale)
+            .unwrap_or(0.0);
+        let handle = state().lock().map(|s| s.handle).unwrap_or(44.0);
+        if logical_w <= handle + 16.0 {
+            let (w, h) = drop_size();
+            size_window(&win, w, h)?;
+        }
     }
     Ok(())
 }

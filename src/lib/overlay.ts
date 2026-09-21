@@ -68,7 +68,7 @@ export function reportOverlaySize(el: HTMLElement) {
 }
 
 export function revealNativeOverlay(el: HTMLElement) {
-  overlayLocked = true;
+  overlayLocked = false;
   const r = el.getBoundingClientRect();
   const width = Math.max(1, Math.ceil(r.width));
   const height = Math.max(1, Math.ceil(r.height));

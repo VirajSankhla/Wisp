@@ -121,6 +121,7 @@ public class WispOverlayPlugin extends Plugin {
             call.getString("name", ""),
             call.getString("json", "")
         );
+        OverlayService.broadcastNotes();
         call.resolve();
     }
 

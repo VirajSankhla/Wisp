@@ -74,17 +74,11 @@ public class OverlayService extends Service {
 
     public static void setAppForeground(boolean foreground) {
         appForeground = foreground;
-        OverlayService s = instance;
-        if (s != null) s.onAppForeground(foreground);
     }
 
-    private void onAppForeground(boolean foreground) {
-        if (foreground) {
-            if (expanded) collapse();
-            detach(handleView);
-        } else if (!expanded) {
-            showHandle();
-        }
+    public static void broadcastNotes() {
+        OverlayService s = instance;
+        if (s != null && s.expanded) s.pushNotesToPanel();
     }
 
     @Override
@@ -106,7 +100,7 @@ public class OverlayService extends Service {
         peeked = getSharedPreferences(PREF, MODE_PRIVATE).getBoolean(PREF_PEEK, false);
         handleY = getSharedPreferences(PREF, MODE_PRIVATE).getInt(PREF_Y, -1);
         ensurePanel(false);
-        if (!appForeground) showHandle();
+        showHandle();
     }
 
     @Override
@@ -136,15 +130,13 @@ public class OverlayService extends Service {
     }
 
     public void resizePanel(int cssWidth, int cssHeight) {
-        if (sizeLocked) return;
         if (!expanded || panelView == null || windowManager == null) return;
         applyPanelSize(cssWidth, cssHeight);
     }
 
     public void revealPanel(int cssWidth, int cssHeight) {
         if (panelView == null) return;
-        if (!sizeLocked) applyPanelSize(cssWidth, cssHeight);
-        sizeLocked = true;
+        applyPanelSize(cssWidth, cssHeight);
         panelReady = true;
         if (panelView.getAlpha() < 1f) {
             panelView.animate().alpha(1f).setDuration(90).start();
@@ -174,7 +166,7 @@ public class OverlayService extends Service {
         expanded = false;
         pullNotesFromPanel();
         hidePanel();
-        if (!appForeground) showHandle();
+        showHandle();
     }
 
     private void hidePanel() {
@@ -470,8 +462,7 @@ public class OverlayService extends Service {
         params.y = Math.max(dp(48), handleY - dp(8));
         params.flags =
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
         return params;
     }
 

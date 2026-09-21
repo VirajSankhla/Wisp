@@ -61,8 +61,9 @@ export function DesktopOverlayCard() {
     <div className="space-y-3 rounded-2xl bg-fg/4 px-3 py-3">
       <p className="text-fg">Edge tab (this computer)</p>
       <p>
-        A drop stays on the right of the screen, above other windows. Same
-        notes as this app. It will not cover exclusive full-screen games.
+        A drop stays on the right of the screen, above other windows
+        (including this one). Click it to open headings. Notes stay live
+        with this list. It will not cover exclusive full-screen games.
       </p>
       <div className="flex flex-wrap gap-2">
         {running ? (

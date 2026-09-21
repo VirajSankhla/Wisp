@@ -19,36 +19,40 @@ function notesFromRaw(raw: string): Note[] | null {
   return null;
 }
 
-function applyNotes(notes: Note[], overlay: boolean) {
-  if (overlay) {
-    const map: Record<string, Note> = {};
-    for (const note of notes) map[note.id] = note;
-    useNotesStore.setState({ notes: map });
-    return;
-  }
+function applyNotes(notes: Note[]) {
   useNotesStore.getState().mergeRemote(notes);
 }
 
 export function applyBootNotes() {
   if (typeof window === "undefined") return;
+  const native = readNativeStore(NAME);
   const boot = (window as Window & { __WISP_BOOT_NOTES__?: string }).__WISP_BOOT_NOTES__;
-  const raw = (typeof boot === "string" && boot) || readNativeStore(NAME);
+  const raw = native || (typeof boot === "string" ? boot : "");
   const notes = notesFromRaw(raw);
   if (!notes?.length) return;
-  applyNotes(notes, true);
+  applyNotes(notes);
+}
+
+export function pullLocalNotes() {
+  if (typeof localStorage === "undefined") return;
+  try {
+    const raw = localStorage.getItem(NAME);
+    const notes = notesFromRaw(raw ?? "");
+    if (notes?.length) applyNotes(notes);
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function pullNativeNotes() {
-  const overlay =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("overlay") === "1";
-  if (overlay) applyBootNotes();
   const raw =
     readNativeStore(NAME) || (await readNativeStoreAsync(NAME)) || "";
-  if (!raw) return;
-  const notes = notesFromRaw(raw);
-  if (!notes?.length) return;
-  applyNotes(notes, overlay);
+  if (raw) {
+    const notes = notesFromRaw(raw);
+    if (notes?.length) applyNotes(notes);
+    return;
+  }
+  pullLocalNotes();
 }
 
 export function pushNativeNotes() {
@@ -82,10 +86,20 @@ export function startStoreBridge() {
   const unsub = useNotesStore.subscribe(() => {
     pushNativeNotes();
   });
-  const id = window.setInterval(tick, 200);
+  const id = window.setInterval(tick, 160);
   const onSync = () => tick();
+  const onStorage = (event: StorageEvent) => {
+    if (event.key && event.key !== NAME) return;
+    if (event.newValue) {
+      const notes = notesFromRaw(event.newValue);
+      if (notes?.length) applyNotes(notes);
+      return;
+    }
+    onSync();
+  };
   window.addEventListener("wisp-boot-notes", onSync);
   window.addEventListener("wisp-native-sync", onSync);
+  window.addEventListener("storage", onStorage);
   document.addEventListener("visibilitychange", onSync);
   window.addEventListener("focus", onSync);
   return () => {
@@ -93,6 +107,7 @@ export function startStoreBridge() {
     window.clearInterval(id);
     window.removeEventListener("wisp-boot-notes", onSync);
     window.removeEventListener("wisp-native-sync", onSync);
+    window.removeEventListener("storage", onStorage);
     document.removeEventListener("visibilitychange", onSync);
     window.removeEventListener("focus", onSync);
   };

@@ -47,14 +47,14 @@ No sign-up. No Google. No X.
 
 ---
 
-## native-15 → this build
+## native-16 → this build
 
-| | native-15 | now |
+| | native-16 | now |
 | --- | --- | --- |
-| Overlay notes | Did not appear in the app | Shared file + live push/pull; overlay injects on open |
-| App notes | Overlay kept its own copy | Same notebook both ways |
-| Overlay open | Slow software WebView, waited to hydrate | Hardware layer, panel stays warm (hidden, not destroyed), notes injected immediately |
-| Icon | Dark droplet, easy to lose on a dark home screen | White flame on dark tile, APK and EXE |
+| Drop over Wisp | Hidden while the app is open | Stays on the right edge |
+| Live notes | Needed to leave the app | Overlay and list merge as you type |
+| Overlay **+** | New note vanished / panel glitched | Opens the heading field; panel resizes |
+| Windows overlay | 44px window with the full list crammed in | Drop first, click to open; density no longer collapses an open panel |
 
 ---
 

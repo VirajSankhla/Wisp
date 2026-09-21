@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
+import { isTauri } from "@/lib/desktop-overlay";
 import { collapseNativeOverlay, revealNativeOverlay, unlockOverlaySize } from "@/lib/overlay";
 import { FAULT_LOG_ID } from "@/lib/notes/fault-log";
 import { visibleNotes } from "@/lib/notes/search";
@@ -11,7 +12,14 @@ import { cn } from "@/lib/utils";
 import { WispMark } from "./mark";
 
 const bubble =
-  "rounded-[22px] bg-black/45 text-fg shadow-[0_8px_24px_-12px_rgb(0_0_0_/_0.55)] ring-1 ring-white/16 backdrop-blur-2xl";
+  "rounded-[22px] bg-black/45 text-fg shadow-[0_8px_24px_-12px_rgb(0_0_0/_0.55)] ring-1 ring-white/16 backdrop-blur-2xl";
+
+function overlayQuery() {
+  return (
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("overlay") === "1"
+  );
+}
 
 export function OverlaySheet() {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -20,6 +28,8 @@ export function OverlaySheet() {
   const hasHydrated = useNotesStore((s) => s.hasHydrated);
   const selected = selectedId ? notes[selectedId] : undefined;
   const [prefs, setPrefs] = useState<Prefs>(() => loadPrefs());
+  const tauriDrop = isTauri() && overlayQuery();
+  const [sheetOpen, setSheetOpen] = useState(!tauriDrop);
   const listMax = overlayListMax(prefs);
   const list = useMemo(
     () =>
@@ -51,7 +61,10 @@ export function OverlaySheet() {
       });
     }, 400);
     const w = window as Window & { __wispCreateNote?: () => void };
-    w.__wispCreateNote = () => useNotesStore.getState().createNote();
+    w.__wispCreateNote = () => {
+      useNotesStore.getState().createNote();
+      setSheetOpen(true);
+    };
     return () => {
       unsub();
       window.clearInterval(id);
@@ -60,6 +73,7 @@ export function OverlaySheet() {
   }, []);
 
   useEffect(() => {
+    if (!sheetOpen) return;
     const el = rootRef.current;
     if (!el) return;
     const send = () => {
@@ -72,17 +86,36 @@ export function OverlaySheet() {
     send();
     const id = requestAnimationFrame(send);
     return () => cancelAnimationFrame(id);
-  }, [listMax, prefs.density, hasHydrated, list.length]);
+  }, [sheetOpen, selectedId, listMax, prefs.density, hasHydrated, list.length]);
 
   function close() {
     useNotesStore.getState().setSelectedId(null);
+    if (tauriDrop) setSheetOpen(false);
     collapseNativeOverlay();
+  }
+
+  function onCreate() {
+    useNotesStore.getState().createNote();
+    setSheetOpen(true);
   }
 
   function removeSelected() {
     if (!selected) return;
     useNotesStore.getState().deleteNote(selected.id);
     useNotesStore.getState().setSelectedId(null);
+  }
+
+  if (tauriDrop && !sheetOpen) {
+    return (
+      <button
+        type="button"
+        aria-label="Open Wisp"
+        onClick={() => setSheetOpen(true)}
+        className="grid size-11 place-items-center rounded-full bg-[#1c1a17] ring-1 ring-white/25"
+      >
+        <WispMark animate className="size-5" />
+      </button>
+    );
   }
 
   return (
@@ -102,7 +135,7 @@ export function OverlaySheet() {
         <WispMark animate className="mx-1 size-3.5" />
         <button
           type="button"
-          onClick={() => useNotesStore.getState().createNote()}
+          onClick={onCreate}
           aria-label="New note"
           className="grid size-8 place-items-center rounded-full text-accent"
         >
@@ -181,6 +214,12 @@ function OverlayNote({
   onDelete: () => void;
   listMax: number;
 }) {
+  const headingRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    headingRef.current?.focus();
+    headingRef.current?.select();
+  }, []);
+
   return (
     <div
       className="flex w-full max-w-[264px] flex-col items-end gap-1.5 overflow-y-auto overscroll-contain"
@@ -204,6 +243,7 @@ function OverlayNote({
         </button>
       </div>
       <textarea
+        ref={headingRef}
         value={heading}
         onChange={(e) => onHeading(e.target.value.slice(0, 240))}
         placeholder="Heading"
