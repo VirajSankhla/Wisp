@@ -55,8 +55,8 @@ export function AndroidOverlayCard() {
       <p>
         Places a drop on the right edge of Android, over the home screen,
         other apps, and Wisp itself. Tap it to pull the notes bubbles out.
-        New notes appear in this list as you write them — no need to leave
-        the app.
+        Tap the home screen (or anywhere outside the bubbles) to tuck it
+        back. New notes appear in this list as you write them.
       </p>
       <p className="text-xs text-subtle">
         {allowed

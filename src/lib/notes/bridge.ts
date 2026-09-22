@@ -55,10 +55,14 @@ export async function pullNativeNotes() {
   pullLocalNotes();
 }
 
+let lastPushed = "";
+
 export function pushNativeNotes() {
   try {
     const raw = localStorage.getItem(NAME);
-    if (raw) writeNativeStore(NAME, raw);
+    if (!raw || raw === lastPushed) return;
+    lastPushed = raw;
+    writeNativeStore(NAME, raw);
   } catch {
     /* ignore */
   }
@@ -79,14 +83,16 @@ export function startStoreBridge() {
       if (raw === last && rev === lastRev) return;
       last = raw;
       lastRev = rev;
+      lastPushed = raw;
       await pullNativeNotes();
     })();
   };
   tick();
-  const unsub = useNotesStore.subscribe(() => {
+  const unsub = useNotesStore.subscribe((state, prev) => {
+    if (state.notes === prev.notes) return;
     pushNativeNotes();
   });
-  const id = window.setInterval(tick, 160);
+  const id = window.setInterval(tick, 450);
   const onSync = () => tick();
   const onStorage = (event: StorageEvent) => {
     if (event.key && event.key !== NAME) return;

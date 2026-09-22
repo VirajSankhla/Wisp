@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { isTauri } from "@/lib/desktop-overlay";
-import { collapseNativeOverlay, revealNativeOverlay, unlockOverlaySize } from "@/lib/overlay";
+import { collapseNativeOverlay, overlayKeepOpen, revealNativeOverlay, unlockOverlaySize } from "@/lib/overlay";
 import { FAULT_LOG_ID } from "@/lib/notes/fault-log";
 import { visibleNotes } from "@/lib/notes/search";
 import { useNotesStore } from "@/lib/notes/store";
@@ -216,6 +216,7 @@ function OverlayNote({
 }) {
   const headingRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
+    overlayKeepOpen();
     headingRef.current?.focus();
     headingRef.current?.select();
   }, []);
@@ -245,6 +246,7 @@ function OverlayNote({
       <textarea
         ref={headingRef}
         value={heading}
+        onFocus={() => overlayKeepOpen()}
         onChange={(e) => onHeading(e.target.value.slice(0, 240))}
         placeholder="Heading"
         rows={1}
@@ -256,6 +258,7 @@ function OverlayNote({
       />
       <textarea
         value={body}
+        onFocus={() => overlayKeepOpen()}
         onChange={(e) => onBody(e.target.value.slice(0, 20_000))}
         placeholder="Write…"
         rows={3}

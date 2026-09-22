@@ -1,4 +1,4 @@
-import { clampNoteTime, isStaleWrite } from "./clock.ts";
+import { clampNoteTime } from "./clock.ts";
 import { noteFromParsed, noteSchema } from "./schema.ts";
 import type { Note } from "./types.ts";
 
@@ -36,7 +36,7 @@ export function mergeNotes(
       continue;
     }
     const existing = notes[next.id];
-    if (existing && isStaleWrite(next.updatedAt, existing.updatedAt)) {
+    if (existing && next.updatedAt <= existing.updatedAt) {
       skipped += 1;
       continue;
     }

@@ -12,6 +12,8 @@ public final class OverlayStore {
     public static synchronized void write(Context ctx, String name, String json) {
         if (ctx == null || json == null) return;
         try {
+            String current = read(ctx, name);
+            if (json.equals(current)) return;
             FileOutputStream out = new FileOutputStream(file(ctx, name));
             out.write(json.getBytes(StandardCharsets.UTF_8));
             out.close();

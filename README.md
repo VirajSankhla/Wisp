@@ -47,14 +47,13 @@ No sign-up. No Google. No X.
 
 ---
 
-## native-16 → this build
+## native-17 → this build
 
-| | native-16 | now |
+| | native-17 | now |
 | --- | --- | --- |
-| Drop over Wisp | Hidden while the app is open | Stays on the right edge |
-| Live notes | Needed to leave the app | Overlay and list merge as you type |
-| Overlay **+** | New note vanished / panel glitched | Opens the heading field; panel resizes |
-| Windows overlay | 44px window with the full list crammed in | Drop first, click to open; density no longer collapses an open panel |
+| App + overlay | “Wisp keeps stopping” | Same-note writes no longer loop; overlay no longer injects on every save |
+| Tap home / side | Expanded overlay stayed up | Tap outside the bubbles tucks it to the drop |
+| Keyboard / new note | Outside-tap closed the editor | Short ignore after open; IME area does not tuck |
 
 ---
 

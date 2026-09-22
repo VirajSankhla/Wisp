@@ -11,6 +11,7 @@ type NativeBridge = {
   collapse?: () => void;
   resize?: (width: number, height: number) => void;
   ready?: (width: number, height: number) => void;
+  keepOpen?: () => void;
   publishSnapshot?: (json: string) => void;
   takeIncoming?: () => string;
   localAddress?: () => string;
@@ -36,6 +37,14 @@ export function collapseNativeOverlay() {
     native()?.collapse?.();
   } catch (err) {
     logWispFault(err instanceof Error ? err.message : "collapse failed");
+  }
+}
+
+export function overlayKeepOpen() {
+  try {
+    native()?.keepOpen?.();
+  } catch {
+    /* overlay webview only */
   }
 }
 

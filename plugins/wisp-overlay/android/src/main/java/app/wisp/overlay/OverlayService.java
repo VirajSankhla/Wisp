@@ -12,10 +12,12 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.content.res.AssetManager;
 import android.webkit.MimeTypeMap;
@@ -60,6 +62,7 @@ public class OverlayService extends Service {
     private float downRawY;
     private int downY;
     private boolean moved;
+    private long ignoreOutsideUntil = 0;
 
     public static boolean isRunning() {
         return running;
@@ -76,9 +79,8 @@ public class OverlayService extends Service {
         appForeground = foreground;
     }
 
-    public static void broadcastNotes() {
-        OverlayService s = instance;
-        if (s != null && s.expanded) s.pushNotesToPanel();
+    public void keepOpen() {
+        ignoreOutsideUntil = SystemClock.uptimeMillis() + 900;
     }
 
     @Override
@@ -178,6 +180,7 @@ public class OverlayService extends Service {
     private void expand(boolean freshNote) {
         if (expanded) return;
         expanded = true;
+        ignoreOutsideUntil = SystemClock.uptimeMillis() + 800;
         ensurePanel(freshNote);
         attachPanel();
         pushNotesToPanel();
@@ -342,7 +345,7 @@ public class OverlayService extends Service {
         Context ctx = getApplicationContext();
         WebView web = new WebView(ctx);
         web.setBackgroundColor(Color.TRANSPARENT);
-        web.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        web.setLayerType(View.LAYER_TYPE_NONE, null);
         web.setAlpha(0f);
         web.setVisibility(View.GONE);
         WebSettings settings = web.getSettings();
@@ -402,6 +405,7 @@ public class OverlayService extends Service {
 
         web.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_OUTSIDE) {
+                if (shouldIgnoreOutside(event)) return true;
                 collapse();
                 return true;
             }
@@ -410,6 +414,21 @@ public class OverlayService extends Service {
         web.loadUrl("https://localhost/?overlay=1&open=1");
         panelWeb = web;
         panelView = web;
+    }
+
+    private boolean shouldIgnoreOutside(MotionEvent event) {
+        if (SystemClock.uptimeMillis() < ignoreOutsideUntil) return true;
+        if (Build.VERSION.SDK_INT >= 30 && panelWeb != null) {
+            try {
+                WindowInsets insets = panelWeb.getRootWindowInsets();
+                if (insets != null && insets.isVisible(WindowInsets.Type.ime())) {
+                    return true;
+                }
+            } catch (Exception ignored) {}
+        }
+        float y = event.getRawY();
+        int h = screenH();
+        return h > 0 && y > h * 0.64f;
     }
 
     private void attachPanel() {
@@ -427,14 +446,21 @@ public class OverlayService extends Service {
 
     private void pushNotesToPanel() {
         if (panelWeb == null) return;
-        String boot = org.json.JSONObject.quote(
-            OverlayStore.read(getApplicationContext(), "wisp.notes.v1")
-        );
-        panelWeb.evaluateJavascript(
-            "window.__WISP_BOOT_NOTES__=" + boot +
-                ";window.dispatchEvent(new Event('wisp-boot-notes'));",
-            null
-        );
+        try {
+            String boot = org.json.JSONObject.quote(
+                OverlayStore.read(getApplicationContext(), "wisp.notes.v1")
+            );
+            panelWeb.post(() -> {
+                try {
+                    if (panelWeb == null) return;
+                    panelWeb.evaluateJavascript(
+                        "window.__WISP_BOOT_NOTES__=" + boot +
+                            ";window.dispatchEvent(new Event('wisp-boot-notes'));",
+                        null
+                    );
+                } catch (Exception ignored) {}
+            });
+        } catch (Exception ignored) {}
     }
 
     private void pullNotesFromPanel() {
@@ -462,7 +488,8 @@ public class OverlayService extends Service {
         params.y = Math.max(dp(48), handleY - dp(8));
         params.flags =
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
         return params;
     }
 

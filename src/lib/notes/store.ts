@@ -212,6 +212,7 @@ export const useNotesStore = create<NotesState>()(
           const result = mergeNotes(s.notes, remote);
           applied = result.applied;
           skipped = result.skipped;
+          if (result.applied === 0) return s;
           return { notes: result.notes };
         });
         return { applied, skipped };

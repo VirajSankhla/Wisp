@@ -31,4 +31,12 @@ describe("mergeNotes", () => {
     ]);
     assert.equal(notes.keep?.heading, "Local");
   });
+
+  it("skips a remote row with the same timestamp", () => {
+    const { applied, notes } = mergeNotes(local, [
+      note({ id: "keep", heading: "Same time", updatedAt: 200 }),
+    ]);
+    assert.equal(applied, 0);
+    assert.equal(notes.keep?.heading, "Local");
+  });
 });

@@ -32,6 +32,11 @@ public class WispNativeBridge {
     }
 
     @JavascriptInterface
+    public void keepOpen() {
+        main.post(service::keepOpen);
+    }
+
+    @JavascriptInterface
     public void publishSnapshot(String json) {
         OverlayHub.publish(json);
     }
