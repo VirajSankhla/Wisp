@@ -1,5 +1,6 @@
+import { mintConnectionCode } from "./codes.ts";
 import { PEER_SYNC_KIND, buildPeerSync, encodePeerSync, openPeerSync } from "./sync.ts";
-import { loadVault } from "./vault.ts";
+import { loadVault, saveVaultFromSecret } from "./vault.ts";
 import { useNotesStore } from "../notes/store.ts";
 
 const REMOTE_KEY = "wisp.remote.v1";
@@ -35,6 +36,29 @@ export function saveRemote(remote: RemoteSync) {
 
 export function clearRemote() {
   localStorage.removeItem(REMOTE_KEY);
+}
+
+export async function ensureVaultForRemote() {
+  if (loadVault()) return;
+  const offer = mintConnectionCode();
+  await saveVaultFromSecret(offer.secret);
+}
+
+/** Save the API, then merge anything already there and push this device's notes. */
+export async function connectAndPush(remote: RemoteSync): Promise<"pushed" | "saved"> {
+  saveRemote(remote);
+  await ensureVaultForRemote();
+  try {
+    await pullRemote();
+  } catch {
+    /* empty bin or offline */
+  }
+  try {
+    await pushRemote();
+    return "pushed";
+  } catch {
+    return "saved";
+  }
 }
 
 export function validateRemoteUrl(raw: string): string {

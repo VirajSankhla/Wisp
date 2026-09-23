@@ -21,8 +21,8 @@ export function WispMark({
       <path
         className="wisp-flame-core"
         d="M12 8.2c-1.2 1.7-3.2 3.7-3.2 5.7A3.2 3.2 0 0 0 12 17.1a3.2 3.2 0 0 0 3.2-3.2c0-2-2-4-3.2-5.7Z"
-        fill="#FFFFFF"
-        opacity="0.28"
+        fill="#12110F"
+        opacity="0.22"
       />
     </svg>
   );

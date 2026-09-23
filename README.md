@@ -47,13 +47,14 @@ No sign-up. No Google. No X.
 
 ---
 
-## native-17 → this build
+## native-18 → this build
 
-| | native-17 | now |
+| | native-18 | now |
 | --- | --- | --- |
-| App + overlay | “Wisp keeps stopping” | Same-note writes no longer loop; overlay no longer injects on every save |
-| Tap home / side | Expanded overlay stayed up | Tap outside the bubbles tucks it to the drop |
-| Keyboard / new note | Outside-tap closed the editor | Short ignore after open; IME area does not tuck |
+| Save API | Saved the URL only | Pulls, then **pushes notes already on the device** |
+| Logo | A different white flame | Original EXE droplet, filled white |
+| Overlay off | Notification or in-app Hide | Drag the drop to the × at the bottom |
+| Android permissions | Extra network + notifications | Overlay + internet + boot restore only |
 
 ---
 
@@ -83,8 +84,10 @@ Settings (gear): Compact / Regular / Large for the drop, and 3 / 4 / 5 visible h
 Easiest free start: [jsonbin.io](https://jsonbin.io)
 
 1. Create a bin, leave it as `{}`. Copy the id and **X-Master-Key**.
-2. Devices → URL `https://api.jsonbin.io/v3/b/YOUR_BIN_ID` → header `X-Master-Key: YOUR_KEY` → **Save API**.
+2. Devices → URL `https://api.jsonbin.io/v3/b/YOUR_BIN_ID` → header `X-Master-Key: YOUR_KEY` → **Save API**. Wisp immediately uploads the notes already on that device.
 3. **Show a code**. Scan on the other device. After that they match on cellular too.
+
+In the app, Devices → **Full instructions on how to connect** walks through the same steps without crowding the form.
 
 Payload is encrypted. Wisp does not host the bin.
 

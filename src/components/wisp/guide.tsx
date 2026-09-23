@@ -141,9 +141,10 @@ export function WispGuide({ onBack }: { onBack: () => void }) {
               <p className="mt-1">
                 Install the Wisp .apk (not the browser install). Open Wisp →
                 Devices → Enable edge tab. Android will ask “Display over other
-                apps.” Allow it. A tab then sits on the right edge of the whole
-                phone — home screen, Chrome, a game. Tap it. Swipe it away or
-                hide it from the notification.
+                apps.” Allow it. A drop sits on the right edge of the whole
+                phone. Tap it for notes. Drag it to the × at the bottom of the
+                screen to hide it. Wisp only asks to draw over other apps —
+                not contacts, storage, or notifications.
               </p>
             </div>
             <div>

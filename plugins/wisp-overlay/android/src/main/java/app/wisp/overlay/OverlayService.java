@@ -26,6 +26,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TextView;
 import androidx.core.app.NotificationCompat;
 import androidx.webkit.WebViewAssetLoader;
 import androidx.webkit.WebViewClientCompat;
@@ -49,6 +50,7 @@ public class OverlayService extends Service {
     private WindowManager windowManager;
     private View handleView;
     private View panelView;
+    private View dismissView;
     private WebView panelWeb;
     private ImageView dropView;
     private View nubView;
@@ -56,7 +58,10 @@ public class OverlayService extends Service {
     private boolean peeked = false;
     private boolean panelReady = false;
     private boolean sizeLocked = false;
+    private boolean overDismiss = false;
     private int handleY = 0;
+    private int handleLeft = 0;
+    private int downLeft;
     private final SyncServer syncServer = new SyncServer();
     private float downRawX;
     private float downRawY;
@@ -101,6 +106,10 @@ public class OverlayService extends Service {
         }
         peeked = getSharedPreferences(PREF, MODE_PRIVATE).getBoolean(PREF_PEEK, false);
         handleY = getSharedPreferences(PREF, MODE_PRIVATE).getInt(PREF_Y, -1);
+        handleLeft = screenW() - dp(handleDp()) - dp(8);
+        if (handleY < 0) {
+            handleY = Math.max(dp(80), screenH() / 2 - dp(22));
+        }
         ensurePanel(false);
         showHandle();
     }
@@ -122,12 +131,14 @@ public class OverlayService extends Service {
         syncServer.stop();
         detach(handleView);
         detach(panelWeb);
+        hideDismiss();
         if (panelWeb != null) {
             panelWeb.destroy();
         }
         handleView = null;
         panelView = null;
         panelWeb = null;
+        dismissView = null;
         super.onDestroy();
     }
 
@@ -218,6 +229,9 @@ public class OverlayService extends Service {
             if (handleY < 0) {
                 handleY = Math.max(dp(80), screenH() / 2 - dp(22));
             }
+            if (handleLeft <= 0) {
+                handleLeft = screenW() - dp(handleDp()) - dp(8);
+            }
         }
         applyHandleLayout();
         if (handleView.getParent() == null) {
@@ -233,41 +247,136 @@ public class OverlayService extends Service {
                 downRawX = event.getRawX();
                 downRawY = event.getRawY();
                 downY = handleY;
+                downLeft = handleLeft;
                 moved = false;
+                overDismiss = false;
                 return true;
             case MotionEvent.ACTION_MOVE: {
                 float dx = event.getRawX() - downRawX;
                 float dy = event.getRawY() - downRawY;
                 if (Math.abs(dx) + Math.abs(dy) > dp(6)) moved = true;
-                handleY = clampY(downY + (int) dy);
-                if (!peeked && dx > dp(28)) {
-                    peeked = true;
-                    persistHandle();
-                } else if (peeked && dx < -dp(22)) {
-                    peeked = false;
-                    persistHandle();
+                if (peeked) {
+                    handleY = clampY(downY + (int) dy);
+                    if (dx < -dp(22)) {
+                        peeked = false;
+                        persistHandle();
+                    }
+                } else {
+                    handleLeft = clampX(downLeft + (int) dx);
+                    handleY = clampY(downY + (int) dy);
+                    if (moved) showDismiss(event.getRawX(), event.getRawY());
+                    if (dx > dp(28) && Math.abs(dy) < dp(28) && !overDismiss) {
+                        peeked = true;
+                        hideDismiss();
+                        persistHandle();
+                    }
                 }
-                windowManager.updateViewLayout(handleView, handleParams());
+                try {
+                    windowManager.updateViewLayout(handleView, handleParams());
+                } catch (Exception ignored) {}
                 return true;
             }
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
+                boolean drop = overDismiss && moved && !peeked;
+                hideDismiss();
+                if (drop) {
+                    dismissOverlay();
+                    return true;
+                }
                 if (!moved) {
                     if (peeked) {
                         peeked = false;
                         persistHandle();
-                        windowManager.updateViewLayout(handleView, handleParams());
                     } else {
                         expand(false);
+                        return true;
                     }
                 } else {
+                    snapHandleRight();
                     persistHandle();
-                    windowManager.updateViewLayout(handleView, handleParams());
                 }
+                try {
+                    windowManager.updateViewLayout(handleView, handleParams());
+                } catch (Exception ignored) {}
                 return true;
             default:
                 return false;
         }
+    }
+
+    private void snapHandleRight() {
+        handleLeft = screenW() - dp(handleDp()) - dp(8);
+        if (handleLeft < dp(8)) handleLeft = dp(8);
+    }
+
+    private void dismissOverlay() {
+        getSharedPreferences(PREF, MODE_PRIVATE)
+            .edit()
+            .putBoolean(PREF_ENABLED, false)
+            .apply();
+        stopSelf();
+    }
+
+    private void showDismiss(float rawX, float rawY) {
+        overDismiss = isOverDismiss(rawX, rawY);
+        if (dismissView == null) {
+            FrameLayout box = new FrameLayout(this);
+            GradientDrawable bg = new GradientDrawable();
+            bg.setShape(GradientDrawable.OVAL);
+            bg.setColor(0xE8C23A3A);
+            box.setBackground(bg);
+            TextView mark = new TextView(this);
+            mark.setText("×");
+            mark.setTextColor(Color.WHITE);
+            mark.setTextSize(28);
+            mark.setGravity(Gravity.CENTER);
+            box.addView(
+                mark,
+                new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            );
+            dismissView = box;
+        }
+        dismissView.setAlpha(overDismiss ? 1f : 0.72f);
+        dismissView.setScaleX(overDismiss ? 1.15f : 1f);
+        dismissView.setScaleY(overDismiss ? 1.15f : 1f);
+        if (dismissView.getParent() == null) {
+            try {
+                windowManager.addView(dismissView, dismissParams());
+            } catch (Exception ignored) {}
+        }
+    }
+
+    private void hideDismiss() {
+        overDismiss = false;
+        if (dismissView != null && dismissView.getParent() != null) {
+            detach(dismissView);
+        }
+    }
+
+    private boolean isOverDismiss(float rawX, float rawY) {
+        float cx = screenW() / 2f;
+        float cy = screenH() - dp(76);
+        float dx = rawX - cx;
+        float dy = rawY - cy;
+        float r = dp(52);
+        return dx * dx + dy * dy < r * r;
+    }
+
+    private WindowManager.LayoutParams dismissParams() {
+        WindowManager.LayoutParams params = baseParams();
+        params.width = dp(56);
+        params.height = dp(56);
+        params.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+        params.y = dp(48);
+        params.flags =
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE |
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
+        return params;
     }
 
     private void persistHandle() {
@@ -306,13 +415,14 @@ public class OverlayService extends Service {
         if (peeked) {
             params.width = dp(22);
             params.height = dp(52);
+            params.gravity = Gravity.TOP | Gravity.END;
             params.x = 0;
         } else {
             params.width = dp(handleDp());
             params.height = dp(handleDp());
-            params.x = dp(8);
+            params.gravity = Gravity.TOP | Gravity.START;
+            params.x = handleLeft;
         }
-        params.gravity = Gravity.TOP | Gravity.END;
         params.y = handleY;
         params.flags =
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
@@ -325,11 +435,22 @@ public class OverlayService extends Service {
         return getResources().getDisplayMetrics().heightPixels;
     }
 
+    private int screenW() {
+        return getResources().getDisplayMetrics().widthPixels;
+    }
+
     private int clampY(int y) {
-        int max = Math.max(dp(24), screenH() - dp(80));
+        int max = Math.max(dp(24), screenH() - dp(handleDp()) - dp(8));
         if (y < dp(24)) return dp(24);
         if (y > max) return max;
         return y;
+    }
+
+    private int clampX(int x) {
+        int max = Math.max(0, screenW() - dp(handleDp()));
+        if (x < 0) return 0;
+        if (x > max) return max;
+        return x;
     }
 
     private void ensurePanel(boolean freshNote) {

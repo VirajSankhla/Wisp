@@ -17,8 +17,8 @@ import { encodeInvite, isInviteShape, parseInvite } from "@/lib/pairing/invite";
 import { pairingQrSvg } from "@/lib/pairing/qr";
 import {
   clearRemote,
+  connectAndPush,
   loadRemote,
-  saveRemote,
   validateRemoteUrl,
 } from "@/lib/pairing/remote";
 import {
@@ -37,7 +37,7 @@ import {
   vaultSecret,
 } from "@/lib/pairing/vault";
 
-type Mode = "home" | "offer" | "enter" | "send" | "receive";
+type Mode = "home" | "offer" | "enter" | "send" | "receive" | "apiHelp";
 
 export function DevicesPanel({ onBack }: { onBack: () => void }) {
   const [mode, setMode] = useState<Mode>("home");
@@ -62,11 +62,13 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
     }
   }, []);
 
-  function persistApi() {
+  async function persistApi() {
     const url = validateRemoteUrl(apiUrl);
-    saveRemote({ url, header: apiHeader });
+    const remote = { url, header: apiHeader };
+    const result = await connectAndPush(remote);
     setApiUrl(url);
-    return { url, header: apiHeader.trim() };
+    setConnected(hasVault());
+    return result;
   }
 
   async function showCode() {
@@ -83,8 +85,9 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
     }
     let next: string;
     try {
-      const remote = persistApi();
-      next = encodeInvite(secret, remote);
+      await persistApi();
+      const remote = loadRemote();
+      next = remote ? encodeInvite(secret, remote) : encodeConnectionCode(secret);
     } catch {
       next = encodeConnectionCode(secret);
     }
@@ -110,19 +113,23 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
       if (isInviteShape(paste)) {
         const parsed = parseInvite(paste);
         await saveVaultFromSecret(parsed.secret);
-        saveRemote(parsed.remote);
+        const sent = await connectAndPush(parsed.remote);
         setApiUrl(parsed.remote.url);
         setApiHeader(parsed.remote.header);
         setConnected(true);
         setMode("home");
-        toast("Connected. Both sides will pull from that API.");
+        toast(
+          sent === "pushed"
+            ? "Connected. Notes on this phone are on the API."
+            : "Connected. Could not reach the API yet.",
+        );
         return;
       }
       const parsed = parseConnectionCode(paste);
       await saveVaultFromSecret(parsed.secret);
       if (apiUrl.trim()) {
         try {
-          persistApi();
+          await persistApi();
         } catch {
           /* lock still saved */
         }
@@ -232,30 +239,18 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
             <AndroidOverlayCard />
             <DesktopOverlayCard />
             <div className="space-y-2">
-              <p className="text-xs font-medium text-fg">Which API</p>
+              <p className="text-xs font-medium text-fg">API (optional)</p>
               <p className="text-xs text-subtle">
-                Easiest free one:{" "}
-                <span className="text-fg">jsonbin.io</span> (no Wisp account).
-                Create a bin, leave it as <span className="font-mono">{"{}"}</span>.
+                jsonbin.io is the default free host. Saving it uploads the notes
+                already on this device so the other side can see them.
               </p>
-              <ol className="list-decimal space-y-1 pl-5 text-xs text-subtle">
-                <li>
-                  URL:{" "}
-                  <span className="font-mono text-fg">
-                    https://api.jsonbin.io/v3/b/YOUR_BIN_ID
-                  </span>
-                </li>
-                <li>
-                  Header:{" "}
-                  <span className="font-mono text-fg">
-                    X-Master-Key: YOUR_KEY
-                  </span>
-                </li>
-              </ol>
-              <p className="text-xs text-subtle">
-                Anything else that accepts GET and PUT of JSON also works —
-                jsonstorage.net, or a tiny server of yours.
-              </p>
+              <button
+                type="button"
+                className="text-left text-xs text-accent underline-offset-2 hover:underline"
+                onClick={() => setMode("apiHelp")}
+              >
+                Full instructions on how to connect
+              </button>
               <label className="text-xs text-subtle">API URL (GET + PUT JSON)</label>
               <input
                 value={apiUrl}
@@ -275,31 +270,23 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
                 size="sm"
                 variant="outline"
                 onClick={() => {
-                  try {
-                    persistApi();
-                    toast("API saved on this device");
-                  } catch (err) {
-                    toast(err instanceof Error ? err.message : "Could not save API");
-                  }
+                  void (async () => {
+                    try {
+                      const sent = await persistApi();
+                      toast(
+                        sent === "pushed"
+                          ? "API saved. Existing notes were sent."
+                          : "API saved. Could not send notes yet — check the URL and key.",
+                      );
+                    } catch (err) {
+                      toast(err instanceof Error ? err.message : "Could not save API");
+                    }
+                  })();
                 }}
               >
                 Save API
               </Button>
-              <p className="text-xs text-subtle">
-                Save it here, then Show a code — the QR carries this URL to the
-                other device.
-              </p>
             </div>
-            <ol className="list-decimal space-y-2 pl-5 text-fg">
-              <li>
-                <span className="font-medium">Save the API</span> on this
-                device (or paste it on both).
-              </li>
-              <li>
-                <span className="font-medium">Show a QR</span> so the other
-                device gets the lock and the URL in one scan.
-              </li>
-            </ol>
             {connected ? (
               <p className="text-xs text-subtle">
                 This device has the lock{vault ? ` · ${vault.id}` : ""}
@@ -364,6 +351,54 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
                 </button>
               </div>
             ) : null}
+          </div>
+        ) : null}
+
+        {mode === "apiHelp" ? (
+          <div className="space-y-4 text-sm leading-relaxed">
+            <p className="text-fg">Connect an API (JSONBin)</p>
+            <p>
+              Wisp does not host your notes. An API is only a box both devices
+              can GET and PUT. The payload is encrypted. You do not need an
+              API for one device.
+            </p>
+            <ol className="list-decimal space-y-2 pl-5 text-muted">
+              <li>
+                Open{" "}
+                <span className="text-fg">jsonbin.io</span>, create a bin,
+                leave the body as <span className="font-mono text-fg">{"{}"}</span>.
+              </li>
+              <li>
+                Copy the bin id and the <span className="text-fg">X-Master-Key</span>.
+              </li>
+              <li>
+                URL:{" "}
+                <span className="font-mono text-fg">
+                  https://api.jsonbin.io/v3/b/YOUR_BIN_ID
+                </span>
+              </li>
+              <li>
+                Header:{" "}
+                <span className="font-mono text-fg">
+                  X-Master-Key: YOUR_KEY
+                </span>
+              </li>
+              <li>
+                Tap <span className="text-fg">Save API</span>. Wisp uploads the
+                notes already on this device, then keeps them matching.
+              </li>
+              <li>
+                Tap <span className="text-fg">Show a code</span> and scan it on
+                the other device. The QR carries the lock and the URL.
+              </li>
+            </ol>
+            <p className="text-xs text-subtle">
+              Any other host that accepts GET and PUT of JSON also works. One
+              optional header, as <span className="font-mono">Name: value</span>.
+            </p>
+            <Button type="button" size="sm" onClick={() => setMode("home")}>
+              Back to Devices
+            </Button>
           </div>
         ) : null}
 
