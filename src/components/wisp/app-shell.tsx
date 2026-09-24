@@ -59,6 +59,7 @@ export function WispApp() {
       void pullNativeNotes().finally(() => {
         const launch = consumeLaunchQuery();
         if (!launch.overlay) s.seedIfEmpty();
+        if (!launch.overlay) s.purgeExpiredTrash();
         s.setHasHydrated(true);
         if (launch.overlay) {
           document.documentElement.classList.add("wisp-overlay-mode");
@@ -120,6 +121,10 @@ export function WispApp() {
         }
         if (s.settingsOpen) {
           s.setSettingsOpen(false);
+          return;
+        }
+        if (s.trashOpen) {
+          s.setTrashOpen(false);
           return;
         }
         if (s.selectedId) {

@@ -13,6 +13,7 @@ import { WispMark } from "./mark";
 import { NoteEditor } from "./note-editor";
 import { NoteList } from "./note-list";
 import { SettingsPanel } from "./settings";
+import { TrashPanel } from "./trash";
 
 export function WispPanel({
   searchRef,
@@ -27,6 +28,7 @@ export function WispPanel({
   const guideOpen = useNotesStore((s) => s.guideOpen);
   const devicesOpen = useNotesStore((s) => s.devicesOpen);
   const settingsOpen = useNotesStore((s) => s.settingsOpen);
+  const trashOpen = useNotesStore((s) => s.trashOpen);
   const hasHydrated = useNotesStore((s) => s.hasHydrated);
   const selected = selectedId ? notes[selectedId] : undefined;
   const showEditor = Boolean(selected && !selected.deletedAt);
@@ -179,6 +181,8 @@ export function WispPanel({
           <DevicesPanel onBack={() => useNotesStore.getState().setDevicesOpen(false)} />
         ) : settingsOpen ? (
           <SettingsPanel onBack={() => useNotesStore.getState().setSettingsOpen(false)} />
+        ) : trashOpen ? (
+          <TrashPanel onBack={() => useNotesStore.getState().setTrashOpen(false)} />
         ) : guideOpen ? (
           <WispGuide onBack={() => useNotesStore.getState().setGuideOpen(false)} />
         ) : showEditor && selected ? (

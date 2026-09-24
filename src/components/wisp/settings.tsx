@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { isAndroidNative, WispOverlay } from "@/lib/overlay";
 import { isTauri, setDesktopOverlayLook } from "@/lib/desktop-overlay";
+import { useNotesStore } from "@/lib/notes/store";
 import {
   DENSITY_META,
   loadPrefs,
@@ -20,6 +21,9 @@ const ROWS: Array<3 | 4 | 5> = [3, 4, 5];
 
 export function SettingsPanel({ onBack }: { onBack: () => void }) {
   const [prefs, setPrefs] = useState<Prefs>(() => loadPrefs());
+  const trashedCount = useNotesStore(
+    (s) => Object.values(s.notes).filter((n) => n.deletedAt != null).length,
+  );
 
   useEffect(() => {
     applyNative(prefs);
@@ -99,6 +103,22 @@ export function SettingsPanel({ onBack }: { onBack: () => void }) {
                 </button>
               ))}
             </div>
+          </section>
+
+          <section className="space-y-3">
+            <p className="text-fg">Trash</p>
+            <p className="text-xs text-subtle">
+              Deleted notes stay here for 30 days before they're gone for
+              good.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => useNotesStore.getState().setTrashOpen(true)}
+            >
+              {trashedCount > 0 ? `View trash (${trashedCount})` : "Trash is empty"}
+            </Button>
           </section>
 
           <section className="space-y-2">

@@ -7,6 +7,9 @@ import type { Note } from "./types.ts";
 
 const FAULT_LOG_ID = "wisp.fault-log";
 
+/** How long a deleted note stays recoverable in Trash before it's purged for good. */
+export const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
 export type NotesState = {
   notes: Record<string, Note>;
   selectedId: string | null;
@@ -17,6 +20,7 @@ export type NotesState = {
   guideOpen: boolean;
   devicesOpen: boolean;
   settingsOpen: boolean;
+  trashOpen: boolean;
   hasHydrated: boolean;
   setHasHydrated: (value: boolean) => void;
   seedIfEmpty: () => void;
@@ -28,6 +32,7 @@ export type NotesState = {
   setGuideOpen: (open: boolean) => void;
   setDevicesOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
+  setTrashOpen: (open: boolean) => void;
   createNote: () => string;
   updateNote: (
     id: string,
@@ -35,6 +40,8 @@ export type NotesState = {
   ) => void;
   deleteNote: (id: string) => void;
   restoreNote: (note: Note) => void;
+  permanentlyDeleteNote: (id: string) => void;
+  purgeExpiredTrash: (now?: number) => number;
   importNotes: (incoming: unknown) => { applied: number; skipped: number };
   clearStarterNotes: () => void;
   mergeRemote: (remote: unknown) => { applied: number; skipped: number };
@@ -44,6 +51,23 @@ export type NotesState = {
 
 function now() {
   return Date.now();
+}
+
+/** Pure so it's directly testable without touching the persisted store. */
+export function purgeExpiredNotes(
+  notes: Record<string, Note>,
+  nowMs: number,
+  retentionMs = TRASH_RETENTION_MS,
+): { notes: Record<string, Note>; purged: number } {
+  let purged = 0;
+  const next = { ...notes };
+  for (const [id, note] of Object.entries(next)) {
+    if (note.deletedAt != null && nowMs - note.deletedAt > retentionMs) {
+      delete next[id];
+      purged += 1;
+    }
+  }
+  return purged === 0 ? { notes, purged: 0 } : { notes: next, purged };
 }
 
 export const useNotesStore = create<NotesState>()(
@@ -58,6 +82,7 @@ export const useNotesStore = create<NotesState>()(
       guideOpen: false,
       devicesOpen: false,
       settingsOpen: false,
+      trashOpen: false,
       hasHydrated: false,
       setHasHydrated: (value) => set({ hasHydrated: value }),
       seedIfEmpty: () => {
@@ -72,6 +97,7 @@ export const useNotesStore = create<NotesState>()(
           guideOpen: false,
           devicesOpen: false,
           settingsOpen: false,
+          trashOpen: false,
         }),
       setPanelOpen: (open) =>
         set({
@@ -84,6 +110,7 @@ export const useNotesStore = create<NotesState>()(
                 guideOpen: false,
                 devicesOpen: false,
                 settingsOpen: false,
+                trashOpen: false,
               }),
         }),
       setSearchOpen: (open) =>
@@ -92,6 +119,7 @@ export const useNotesStore = create<NotesState>()(
           guideOpen: false,
           devicesOpen: false,
           settingsOpen: false,
+          trashOpen: false,
           ...(open ? {} : { query: "", activeTag: null }),
         }),
       setGuideOpen: (open) =>
@@ -103,6 +131,7 @@ export const useNotesStore = create<NotesState>()(
                 searchOpen: false,
                 devicesOpen: false,
                 settingsOpen: false,
+                trashOpen: false,
                 panelOpen: true,
               }
             : {}),
@@ -116,6 +145,7 @@ export const useNotesStore = create<NotesState>()(
                 searchOpen: false,
                 guideOpen: false,
                 settingsOpen: false,
+                trashOpen: false,
                 panelOpen: true,
               }
             : {}),
@@ -129,6 +159,21 @@ export const useNotesStore = create<NotesState>()(
                 searchOpen: false,
                 guideOpen: false,
                 devicesOpen: false,
+                trashOpen: false,
+                panelOpen: true,
+              }
+            : {}),
+        }),
+      setTrashOpen: (open) =>
+        set({
+          trashOpen: open,
+          ...(open
+            ? {
+                selectedId: null,
+                searchOpen: false,
+                guideOpen: false,
+                devicesOpen: false,
+                settingsOpen: false,
                 panelOpen: true,
               }
             : {}),
@@ -174,6 +219,23 @@ export const useNotesStore = create<NotesState>()(
       },
       restoreNote: (note) => {
         set((s) => ({ notes: { ...s.notes, [note.id]: note } }));
+      },
+      permanentlyDeleteNote: (id) => {
+        set((s) => {
+          if (!(id in s.notes)) return s;
+          const notes = { ...s.notes };
+          delete notes[id];
+          return { notes };
+        });
+      },
+      purgeExpiredTrash: (nowMs = now()) => {
+        let purged = 0;
+        set((s) => {
+          const result = purgeExpiredNotes(s.notes, nowMs);
+          purged = result.purged;
+          return result.purged === 0 ? s : { notes: result.notes };
+        });
+        return purged;
       },
       importNotes: (incoming) => {
         let applied = 0;
