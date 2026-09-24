@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Download, History, Pin, RotateCcw, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowUpRight, ChevronLeft, Download, History, Pin, RotateCcw, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { downloadMarkdown } from "@/lib/notes/backup";
+import { parseNoteLinks, resolveNoteLinks } from "@/lib/notes/links";
 import { useNotesStore } from "@/lib/notes/store";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/lib/notes/types";
@@ -28,6 +29,14 @@ export function NoteEditor({
   const [savedFlash, setSavedFlash] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const skipFlash = useRef(true);
+  const allNotes = useNotesStore((s) => s.notes);
+  const linkedNotes = useMemo(
+    () =>
+      resolveNoteLinks(parseNoteLinks(note.body), Object.values(allNotes)).filter(
+        (link) => link.note && link.note.id !== note.id,
+      ),
+    [note.body, note.id, allNotes],
+  );
 
   useEffect(() => {
     const el = headingRef.current;
@@ -198,6 +207,27 @@ export function NoteEditor({
             maxLength={20000}
             className="min-h-32 flex-1 resize-none bg-transparent px-4 py-3 text-sm leading-relaxed text-fg placeholder:text-subtle focus:outline-none"
           />
+
+          {linkedNotes.length > 0 ? (
+            <div className="border-t border-border px-4 py-3">
+              <p className="mb-2 text-xs font-medium tracking-wide text-subtle uppercase">
+                Linked notes
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {linkedNotes.map(({ note: linked }) => (
+                  <button
+                    key={linked!.id}
+                    type="button"
+                    onClick={() => useNotesStore.getState().setSelectedId(linked!.id)}
+                    className="inline-flex h-8 items-center gap-1 rounded-full bg-fg/6 px-3 text-xs text-muted hover:text-fg"
+                  >
+                    {linked!.heading.trim() || "Untitled"}
+                    <ArrowUpRight className="size-3" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="border-t border-border px-4 py-3">
             <p className="mb-2 text-xs font-medium tracking-wide text-subtle uppercase">

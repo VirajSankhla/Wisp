@@ -106,6 +106,11 @@ export function WispGuide({ onBack }: { onBack: () => void }) {
                 (the lock), then Send notes on one and Receive notes on the
                 other — copy, share, or a file.
               </li>
+              <li>
+                <span className="text-fg">[[Heading]]</span> in a note's body
+                links to the note with that heading — a "Linked notes" jump
+                list appears in the editor once it matches something.
+              </li>
             </ul>
             {hasStarters ? (
               <Button
