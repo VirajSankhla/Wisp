@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { downloadBackup, parseBackup } from "@/lib/notes/backup";
+import { downloadBackup, downloadMarkdownZip, parseBackup } from "@/lib/notes/backup";
 import { SAMPLE_IDS } from "@/lib/notes/samples";
 import { useNotesStore } from "@/lib/notes/store";
 import { cn } from "@/lib/utils";
@@ -204,6 +204,17 @@ export function WispGuide({ onBack }: { onBack: () => void }) {
                 onClick={() => fileRef.current?.click()}
               >
                 Import backup
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  downloadMarkdownZip(notes);
+                  toast("Notes downloaded as Markdown");
+                }}
+              >
+                Export as Markdown (.zip)
               </Button>
               <input
                 ref={fileRef}

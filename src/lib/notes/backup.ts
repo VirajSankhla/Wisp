@@ -1,5 +1,6 @@
 import { BACKUP_KIND, backupSchema, noteFromParsed } from "./schema.ts";
 import type { Note } from "./types.ts";
+import { buildZip } from "./zip.ts";
 
 export { BACKUP_KIND };
 
@@ -67,14 +68,46 @@ export function downloadBackup(notes: Record<string, Note>) {
   );
 }
 
-export function downloadMarkdown(note: Note) {
-  const slug = (note.heading.trim() || "note")
+function slugify(heading: string): string {
+  const slug = (heading.trim() || "note")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 40);
+  return slug || "note";
+}
+
+export function downloadMarkdown(note: Note) {
   triggerDownload(
-    `${slug || "note"}.md`,
+    `${slugify(note.heading)}.md`,
     new Blob([noteToMarkdown(note)], { type: "text/markdown" }),
+  );
+}
+
+/** One .md file per note, named uniquely, oldest write wins the bare slug. */
+export function buildMarkdownZipEntries(notes: Note[]) {
+  const used = new Set<string>();
+  return notes.map((note) => {
+    const base = slugify(note.heading);
+    let name = `${base}.md`;
+    let n = 2;
+    while (used.has(name)) {
+      name = `${base}-${n}.md`;
+      n += 1;
+    }
+    used.add(name);
+    return { name, content: new TextEncoder().encode(noteToMarkdown(note)) };
+  });
+}
+
+export function downloadMarkdownZip(notes: Record<string, Note>) {
+  const live = Object.values(notes)
+    .filter((n) => !n.deletedAt)
+    .sort((a, b) => a.heading.localeCompare(b.heading));
+  const zip = buildZip(buildMarkdownZipEntries(live));
+  const stamp = new Date().toISOString().slice(0, 10);
+  triggerDownload(
+    `wisp-notes-${stamp}.zip`,
+    new Blob([zip as BlobPart], { type: "application/zip" }),
   );
 }
