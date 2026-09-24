@@ -13,6 +13,7 @@
   <a href="https://github.com/VirajSankhla/Wisp/releases"><img src="https://img.shields.io/github/downloads/VirajSankhla/Wisp/total?label=downloads" alt="downloads" /></a>
   <a href="https://github.com/VirajSankhla/Wisp/stargazers"><img src="https://img.shields.io/github/stars/VirajSankhla/Wisp?style=flat" alt="stars" /></a>
   <a href="https://github.com/VirajSankhla/Wisp/actions/workflows/release-native.yml"><img src="https://github.com/VirajSankhla/Wisp/actions/workflows/release-native.yml/badge.svg" alt="build" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-1c1a17" alt="license" /></a>
 </p>
 
 <p align="center">
