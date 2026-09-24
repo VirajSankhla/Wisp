@@ -1,5 +1,5 @@
 import { WebPlugin } from "@capacitor/core";
-import type { WispOverlayPlugin } from "./definitions";
+import type { WispOverlayPlugin } from "./definitions.ts";
 
 export class WispOverlayWeb extends WebPlugin implements WispOverlayPlugin {
   async canDrawOverlays(): Promise<{ value: boolean }> {
