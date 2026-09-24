@@ -1,3 +1,4 @@
+import { FAULT_LOG_ID } from "./fault-log.ts";
 import type { Note } from "./types.ts";
 
 export function parseQuery(raw: string): { text: string; tags: string[] } {
@@ -18,6 +19,7 @@ export function noteMatches(
   activeTag: string | null,
 ): boolean {
   if (note.deletedAt) return false;
+  if (note.id === FAULT_LOG_ID) return false;
   const { text, tags } = parseQuery(query);
   if (
     activeTag &&
@@ -36,7 +38,7 @@ export function noteMatches(
 export function collectTags(notes: Note[]): string[] {
   const set = new Map<string, string>();
   for (const note of notes) {
-    if (note.deletedAt) continue;
+    if (note.deletedAt || note.id === FAULT_LOG_ID) continue;
     for (const tag of note.tags) {
       const key = tag.toLowerCase();
       if (!set.has(key)) set.set(key, tag);

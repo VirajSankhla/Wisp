@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { isTauri } from "@/lib/desktop-overlay";
 import { collapseNativeOverlay, overlayKeepOpen, revealNativeOverlay, unlockOverlaySize } from "@/lib/overlay";
-import { FAULT_LOG_ID } from "@/lib/notes/fault-log";
 import { visibleNotes } from "@/lib/notes/search";
 import { useNotesStore } from "@/lib/notes/store";
 import { applyPrefs, loadPrefs, overlayListMax, subscribePrefs, type Prefs } from "@/lib/prefs";
@@ -32,10 +31,7 @@ export function OverlaySheet() {
   const [sheetOpen, setSheetOpen] = useState(!tauriDrop);
   const listMax = overlayListMax(prefs);
   const list = useMemo(
-    () =>
-      visibleNotes(notes, "", null)
-        .filter((n) => n.id !== FAULT_LOG_ID)
-        .slice(0, 24),
+    () => visibleNotes(notes, "", null).slice(0, 24),
     [notes],
   );
 

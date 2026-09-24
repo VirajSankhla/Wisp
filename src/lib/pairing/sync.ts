@@ -1,4 +1,5 @@
 import { asSource, fromB64, randomBytes, toB64 } from "./bytes.ts";
+import { FAULT_LOG_ID } from "../notes/fault-log.ts";
 import { noteSchema } from "../notes/schema.ts";
 import type { Note } from "../notes/types.ts";
 import { importVaultKey, loadVault } from "./vault.ts";
@@ -39,6 +40,7 @@ export async function buildPeerSync(
   const key = await importVaultKey(vault.key);
   const payload = JSON.stringify(
     Object.values(notes)
+      .filter((n) => n.id !== FAULT_LOG_ID)
       .map(stableNote)
       .filter((n) => noteSchema.safeParse(n).success),
   );
