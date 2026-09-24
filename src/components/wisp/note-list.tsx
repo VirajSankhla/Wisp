@@ -1,16 +1,37 @@
+import { Fragment } from "react";
 import { Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { highlightSegments } from "@/lib/notes/search";
 import type { Note } from "@/lib/notes/types";
 import { relativeTime } from "./relative-time";
 import { useNotesStore } from "@/lib/notes/store";
 
+function Highlighted({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  return (
+    <>
+      {highlightSegments(text, query).map((segment, i) =>
+        segment.match ? (
+          <mark key={i} className="rounded-[3px] bg-accent/30 text-fg">
+            {segment.text}
+          </mark>
+        ) : (
+          <Fragment key={i}>{segment.text}</Fragment>
+        ),
+      )}
+    </>
+  );
+}
+
 function Row({
   note,
   selected,
+  query,
   onSelect,
 }: {
   note: Note;
   selected: boolean;
+  query: string;
   onSelect: (id: string) => void;
 }) {
   const heading = note.heading.trim() || "Untitled";
@@ -42,7 +63,7 @@ function Row({
                   note.heading.trim() ? "text-fg" : "text-muted italic",
                 )}
               >
-                {heading}
+                {note.heading.trim() ? <Highlighted text={heading} query={query} /> : heading}
               </span>
             </span>
           </span>
@@ -73,11 +94,13 @@ export function NoteList({
   notes,
   selectedId,
   searching,
+  query = "",
   onSelect,
 }: {
   notes: Note[];
   selectedId: string | null;
   searching: boolean;
+  query?: string;
   onSelect: (id: string) => void;
 }) {
   if (notes.length === 0) {
@@ -110,6 +133,7 @@ export function NoteList({
             key={note.id}
             note={note}
             selected={note.id === selectedId}
+            query={query}
             onSelect={onSelect}
           />
         ))}
@@ -125,6 +149,7 @@ export function NoteList({
             key={note.id}
             note={note}
             selected={note.id === selectedId}
+            query={query}
             onSelect={onSelect}
           />
         ))}

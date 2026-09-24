@@ -4,7 +4,7 @@ import { useEffect, useMemo, type RefObject } from "react";
 import { CircleHelp, Plus, Search, Settings, Smartphone, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { collectTags, visibleNotes } from "@/lib/notes/search";
+import { collectTags, parseQuery, visibleNotes } from "@/lib/notes/search";
 import { useNotesStore } from "@/lib/notes/store";
 import { cn } from "@/lib/utils";
 import { DevicesPanel } from "./devices";
@@ -35,6 +35,7 @@ export function WispPanel({
     () => visibleNotes(notes, query, activeTag),
     [notes, query, activeTag],
   );
+  const searchText = useMemo(() => parseQuery(query).text, [query]);
   const tags = useMemo(() => collectTags(Object.values(notes)), [notes]);
 
   useEffect(() => {
@@ -199,6 +200,7 @@ export function WispPanel({
             notes={list}
             selectedId={selectedId}
             searching={Boolean(query.trim() || activeTag)}
+            query={searchText}
             onSelect={(id) => useNotesStore.getState().setSelectedId(id)}
           />
         )}

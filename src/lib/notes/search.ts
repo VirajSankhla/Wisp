@@ -35,6 +35,29 @@ export function noteMatches(
   return hay.includes(text.toLowerCase());
 }
 
+export type TextSegment = { text: string; match: boolean };
+
+/** Splits `text` on case-insensitive occurrences of `needle` for highlighting. */
+export function highlightSegments(text: string, needle: string): TextSegment[] {
+  const trimmed = needle.trim();
+  if (!trimmed) return [{ text, match: false }];
+  const lower = text.toLowerCase();
+  const needleLower = trimmed.toLowerCase();
+  const segments: TextSegment[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const idx = lower.indexOf(needleLower, i);
+    if (idx === -1) {
+      segments.push({ text: text.slice(i), match: false });
+      break;
+    }
+    if (idx > i) segments.push({ text: text.slice(i, idx), match: false });
+    segments.push({ text: text.slice(idx, idx + trimmed.length), match: true });
+    i = idx + trimmed.length;
+  }
+  return segments;
+}
+
 export function collectTags(notes: Note[]): string[] {
   const set = new Map<string, string>();
   for (const note of notes) {
