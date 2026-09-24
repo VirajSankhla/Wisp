@@ -6,8 +6,8 @@ import { installFaultLogger } from "@/lib/notes/fault-log";
 import { startStoreBridge, pullNativeNotes } from "@/lib/notes/bridge";
 import { startRemoteSync } from "@/lib/pairing/remote";
 import { useNotesStore } from "@/lib/notes/store";
-import { applyPrefs, loadPrefs } from "@/lib/prefs";
-import { isTauri, startDesktopOverlay } from "@/lib/desktop-overlay";
+import { applyPrefs, DENSITY_META, loadPrefs } from "@/lib/prefs";
+import { isTauri, setDesktopOverlayLook, startDesktopOverlay } from "@/lib/desktop-overlay";
 import { cn } from "@/lib/utils";
 import { DesktopHandle } from "./desktop-handle";
 import { DesktopScene } from "./desktop-scene";
@@ -75,7 +75,19 @@ export function WispApp() {
   useEffect(() => {
     applyPrefs();
     if (isTauri() && loadPrefs().desktopOverlay) {
-      void startDesktopOverlay().catch(() => {});
+      void (async () => {
+        const handleDp = DENSITY_META[loadPrefs().density].handle;
+        try {
+          await setDesktopOverlayLook(handleDp);
+        } catch {
+          /* best effort */
+        }
+        try {
+          await startDesktopOverlay();
+        } catch {
+          /* best effort */
+        }
+      })();
     }
   }, []);
 

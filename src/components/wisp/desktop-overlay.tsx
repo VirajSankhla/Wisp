@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import {
   desktopOverlayRunning,
   isTauri,
+  setDesktopOverlayLook,
   startDesktopOverlay,
   stopDesktopOverlay,
 } from "@/lib/desktop-overlay";
-import { loadPrefs, savePrefs } from "@/lib/prefs";
+import { DENSITY_META, loadPrefs, savePrefs } from "@/lib/prefs";
 
 export function DesktopOverlayCard() {
   const [show, setShow] = useState(false);
@@ -41,6 +42,7 @@ export function DesktopOverlayCard() {
 
   async function enable() {
     try {
+      await setDesktopOverlayLook(DENSITY_META[loadPrefs().density].handle).catch(() => {});
       await startDesktopOverlay();
       setRunning(true);
       savePrefs({ ...loadPrefs(), desktopOverlay: true });
