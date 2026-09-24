@@ -4,9 +4,6 @@ export interface WispOverlayPlugin {
   start(): Promise<void>;
   stop(): Promise<void>;
   isRunning(): Promise<{ value: boolean }>;
-  localAddress(): Promise<{ value: string }>;
-  publishSnapshot(options: { json: string }): Promise<void>;
-  takeIncoming(): Promise<{ value: string }>;
   resize(options: { width: number; height: number }): Promise<void>;
   setLook(options: { handleDp: number }): Promise<void>;
   readStore(options: { name: string }): Promise<{ value: string }>;

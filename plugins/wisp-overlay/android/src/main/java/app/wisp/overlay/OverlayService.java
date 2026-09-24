@@ -62,7 +62,6 @@ public class OverlayService extends Service {
     private int handleY = 0;
     private int handleLeft = 0;
     private int downLeft;
-    private final SyncServer syncServer = new SyncServer();
     private float downRawX;
     private float downRawY;
     private int downY;
@@ -128,7 +127,6 @@ public class OverlayService extends Service {
     public void onDestroy() {
         running = false;
         if (instance == this) instance = null;
-        syncServer.stop();
         detach(handleView);
         detach(panelWeb);
         hideDismiss();

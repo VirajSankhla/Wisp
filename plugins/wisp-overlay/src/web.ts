@@ -13,13 +13,6 @@ export class WispOverlayWeb extends WebPlugin implements WispOverlayPlugin {
   async isRunning(): Promise<{ value: boolean }> {
     return { value: false };
   }
-  async localAddress(): Promise<{ value: string }> {
-    return { value: "" };
-  }
-  async publishSnapshot(): Promise<void> {}
-  async takeIncoming(): Promise<{ value: string }> {
-    return { value: "" };
-  }
   async resize(): Promise<void> {}
   async setLook(): Promise<void> {}
   async readStore(): Promise<{ value: string }> {

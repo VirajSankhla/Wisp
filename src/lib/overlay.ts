@@ -12,9 +12,6 @@ type NativeBridge = {
   resize?: (width: number, height: number) => void;
   ready?: (width: number, height: number) => void;
   keepOpen?: () => void;
-  publishSnapshot?: (json: string) => void;
-  takeIncoming?: () => string;
-  localAddress?: () => string;
 };
 
 function native(): NativeBridge | undefined {
@@ -95,47 +92,6 @@ export function revealNativeOverlay(el: HTMLElement) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (!isNativeBridgeNoise(message)) logWispFault("Overlay reveal failed", message);
-  }
-}
-
-export async function lanAddress(): Promise<string> {
-  try {
-    const fromBridge = native()?.localAddress?.();
-    if (fromBridge) return fromBridge;
-    const result = await WispOverlay.localAddress();
-    return result.value ?? "";
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    if (!isNativeBridgeNoise(message)) logWispFault("LAN address failed", message);
-    return "";
-  }
-}
-
-export async function publishLanSnapshot(json: string) {
-  try {
-    native()?.publishSnapshot?.(json);
-  } catch {
-    /* overlay webview only */
-  }
-  try {
-    await WispOverlay.publishSnapshot({ json });
-  } catch {
-    /* web no-op */
-  }
-}
-
-export async function takeLanIncoming(): Promise<string> {
-  try {
-    const fromBridge = native()?.takeIncoming?.();
-    if (fromBridge) return fromBridge;
-  } catch {
-    /* ignore */
-  }
-  try {
-    const result = await WispOverlay.takeIncoming();
-    return result.value ?? "";
-  } catch {
-    return "";
   }
 }
 

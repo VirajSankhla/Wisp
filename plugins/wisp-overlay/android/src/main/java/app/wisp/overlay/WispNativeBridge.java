@@ -37,21 +37,6 @@ public class WispNativeBridge {
     }
 
     @JavascriptInterface
-    public void publishSnapshot(String json) {
-        OverlayHub.publish(json);
-    }
-
-    @JavascriptInterface
-    public String takeIncoming() {
-        return OverlayHub.takeIncoming();
-    }
-
-    @JavascriptInterface
-    public String localAddress() {
-        return OverlayHub.ipv4();
-    }
-
-    @JavascriptInterface
     public String readStore(String name) {
         return OverlayStore.read(service.getApplicationContext(), name);
     }

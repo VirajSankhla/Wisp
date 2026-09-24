@@ -1,10 +1,14 @@
 package app.wisp.overlay;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -43,6 +47,7 @@ public class WispOverlayPlugin extends Plugin {
             .edit()
             .putBoolean(OverlayService.PREF_ENABLED, true)
             .apply();
+        requestNotificationPermission();
         Intent service = new Intent(ctx, OverlayService.class);
         if (Build.VERSION.SDK_INT >= 26) {
             ctx.startForegroundService(service);
@@ -67,26 +72,6 @@ public class WispOverlayPlugin extends Plugin {
     public void isRunning(PluginCall call) {
         JSObject ret = new JSObject();
         ret.put("value", OverlayService.isRunning());
-        call.resolve(ret);
-    }
-
-    @PluginMethod
-    public void localAddress(PluginCall call) {
-        JSObject ret = new JSObject();
-        ret.put("value", OverlayHub.ipv4());
-        call.resolve(ret);
-    }
-
-    @PluginMethod
-    public void publishSnapshot(PluginCall call) {
-        OverlayHub.publish(call.getString("json", ""));
-        call.resolve();
-    }
-
-    @PluginMethod
-    public void takeIncoming(PluginCall call) {
-        JSObject ret = new JSObject();
-        ret.put("value", OverlayHub.takeIncoming());
         call.resolve(ret);
     }
 
@@ -147,5 +132,19 @@ public class WispOverlayPlugin extends Plugin {
     @Override
     public void handleOnPause() {
         OverlayService.setAppForeground(false);
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < 33) return;
+        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.POST_NOTIFICATIONS)
+            == PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        if (getActivity() == null) return;
+        ActivityCompat.requestPermissions(
+            getActivity(),
+            new String[] { Manifest.permission.POST_NOTIFICATIONS },
+            4171
+        );
     }
 }
