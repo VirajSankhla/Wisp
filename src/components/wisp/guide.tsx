@@ -172,9 +172,10 @@ export function WispGuide({ onBack }: { onBack: () => void }) {
               inward on purpose.
             </p>
             <p>
-              A classic .exe / .apk is packaging from the same project. The
-              Android APK still cannot cover other apps until a native overlay
-              permission is added — that is not a PWA feature.
+              A classic .exe / .apk is packaging from the same project — the
+              overlay drop over other apps (Android) and over other windows
+              (Windows) needs that packaging; a browser tab or installed PWA
+              cannot do it.
             </p>
           </div>
         ) : null}
