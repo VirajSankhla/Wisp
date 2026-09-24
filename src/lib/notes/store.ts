@@ -3,12 +3,17 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { readNativeStore, writeNativeStore } from "../native-store.ts";
 import { mergeNotes } from "./merge.ts";
 import { SAMPLE_IDS, sampleNotes } from "./samples.ts";
-import type { Note } from "./types.ts";
+import type { Note, NoteVersion } from "./types.ts";
 
 const FAULT_LOG_ID = "wisp.fault-log";
 
 /** How long a deleted note stays recoverable in Trash before it's purged for good. */
 export const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Local edit-history depth per note, and the pause between edits before a new
+ * checkpoint is worth keeping (otherwise every keystroke would snapshot). */
+export const HISTORY_MAX = 5;
+export const HISTORY_MIN_GAP_MS = 30 * 1000;
 
 export type NotesState = {
   notes: Record<string, Note>;
@@ -40,6 +45,7 @@ export type NotesState = {
   ) => void;
   deleteNote: (id: string) => void;
   restoreNote: (note: Note) => void;
+  restoreVersion: (id: string, index: number) => void;
   permanentlyDeleteNote: (id: string) => void;
   purgeExpiredTrash: (now?: number) => number;
   importNotes: (incoming: unknown) => { applied: number; skipped: number };
@@ -51,6 +57,30 @@ export type NotesState = {
 
 function now() {
   return Date.now();
+}
+
+/**
+ * The history entry a content edit should add, if any — pure and testable.
+ * Returns the unchanged history when the edit doesn't touch heading/body, or
+ * when the last edit was too recent to be worth a separate checkpoint.
+ */
+export function withHistoryCheckpoint(
+  existing: Note,
+  patch: Partial<Pick<Note, "heading" | "body">>,
+  nowMs: number,
+): NoteVersion[] | undefined {
+  const nextHeading = patch.heading ?? existing.heading;
+  const nextBody = patch.body ?? existing.body;
+  if (nextHeading === existing.heading && nextBody === existing.body) {
+    return existing.history;
+  }
+  if (nowMs - existing.updatedAt < HISTORY_MIN_GAP_MS) return existing.history;
+  const entry: NoteVersion = {
+    heading: existing.heading,
+    body: existing.body,
+    updatedAt: existing.updatedAt,
+  };
+  return [entry, ...(existing.history ?? [])].slice(0, HISTORY_MAX);
 }
 
 /** Pure so it's directly testable without touching the persisted store. */
@@ -205,8 +235,31 @@ export const useNotesStore = create<NotesState>()(
       updateNote: (id, patch) => {
         const existing = get().notes[id];
         if (!existing || existing.deletedAt) return;
-        const next: Note = { ...existing, ...patch, updatedAt: now() };
+        const nowMs = now();
+        const history = withHistoryCheckpoint(existing, patch, nowMs);
+        const next: Note = { ...existing, ...patch, updatedAt: nowMs, history };
         set((s) => ({ notes: { ...s.notes, [id]: next } }));
+      },
+      restoreVersion: (id, index) => {
+        set((s) => {
+          const existing = s.notes[id];
+          const entry = existing?.history?.[index];
+          if (!existing || !entry) return s;
+          const snapshot: NoteVersion = {
+            heading: existing.heading,
+            body: existing.body,
+            updatedAt: existing.updatedAt,
+          };
+          const history = [snapshot, ...(existing.history ?? [])].slice(0, HISTORY_MAX);
+          const next: Note = {
+            ...existing,
+            heading: entry.heading,
+            body: entry.body,
+            updatedAt: now(),
+            history,
+          };
+          return { notes: { ...s.notes, [id]: next } };
+        });
       },
       deleteNote: (id) => {
         const existing = get().notes[id];

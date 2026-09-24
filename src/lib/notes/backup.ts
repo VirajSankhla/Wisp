@@ -18,7 +18,9 @@ export function buildBackup(notes: Record<string, Note>): WispBackup {
   return {
     kind: BACKUP_KIND,
     exportedAt: Date.now(),
-    notes: Object.values(notes).filter((n) => !n.deletedAt),
+    notes: Object.values(notes)
+      .filter((n) => !n.deletedAt)
+      .map(({ history: _history, ...note }) => note),
   };
 }
 
