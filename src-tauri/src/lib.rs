@@ -1,10 +1,13 @@
 use std::sync::Mutex;
 use tauri::{
+    menu::{Menu, MenuItem},
+    tray::TrayIconBuilder,
     AppHandle, LogicalPosition, LogicalSize, Manager, Position, Size, WebviewUrl,
-    WebviewWindow, WebviewWindowBuilder,
+    WebviewWindow, WebviewWindowBuilder, WindowEvent,
 };
 
 const OVERLAY: &str = "overlay";
+const MAIN: &str = "main";
 
 struct OverlayState {
     y: Option<f64>,
@@ -182,6 +185,69 @@ fn overlay_set_look(app: AppHandle, handle: f64) -> Result<(), String> {
     Ok(())
 }
 
+/// Desktop only: a system tray icon so Wisp can disappear from the taskbar
+/// entirely and be summoned from the tray instead. Mobile has no tray.
+#[cfg(desktop)]
+fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
+    let show = MenuItem::with_id(app, "show", "Show Wisp", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&show, &quit])?;
+
+    let Some(icon) = app.default_window_icon().cloned() else {
+        return Ok(());
+    };
+
+    TrayIconBuilder::new()
+        .icon(icon)
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "show" => {
+                if let Some(w) = app.get_webview_window(MAIN) {
+                    let _ = w.show();
+                    let _ = w.set_focus();
+                }
+            }
+            "quit" => app.exit(0),
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let tauri::tray::TrayIconEvent::Click {
+                button: tauri::tray::MouseButton::Left,
+                button_state: tauri::tray::MouseButtonState::Up,
+                ..
+            } = event
+            {
+                let app = tray.app_handle();
+                if let Some(w) = app.get_webview_window(MAIN) {
+                    let visible = w.is_visible().unwrap_or(false);
+                    if visible {
+                        let _ = w.hide();
+                    } else {
+                        let _ = w.show();
+                        let _ = w.set_focus();
+                    }
+                }
+            }
+        })
+        .build(app)?;
+
+    // Closing the main window hides it instead of quitting — Quit lives in
+    // the tray menu. Without this a tray icon with no way to bring the
+    // window back is just a dead icon.
+    if let Some(main) = app.get_webview_window(MAIN) {
+        let hide_target = main.clone();
+        main.on_window_event(move |event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = hide_target.hide();
+            }
+        });
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -195,6 +261,11 @@ pub fn run() {
             overlay_set_y,
             overlay_set_look,
         ])
+        .setup(|_app| {
+            #[cfg(desktop)]
+            setup_tray(_app)?;
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running Wisp");
 }
