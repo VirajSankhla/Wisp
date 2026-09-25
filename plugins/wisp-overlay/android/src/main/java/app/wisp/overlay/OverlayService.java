@@ -179,16 +179,18 @@ public class OverlayService extends Service {
                 params.height = h;
                 return;
             }
-            int fromW = params.width > 0 ? params.width : w;
-            int fromH = params.height > 0 ? params.height : h;
-            if (fromW == w && fromH == h) return;
+            final int targetW = w;
+            final int targetH = h;
+            int fromW = params.width > 0 ? params.width : targetW;
+            int fromH = params.height > 0 ? params.height : targetH;
+            if (fromW == targetW && fromH == targetH) return;
             ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
             animator.setDuration(160);
             animator.setInterpolator(new DecelerateInterpolator());
             animator.addUpdateListener(a -> {
                 float t = (float) a.getAnimatedValue();
-                params.width = Math.round(fromW + (w - fromW) * t);
-                params.height = Math.round(fromH + (h - fromH) * t);
+                params.width = Math.round(fromW + (targetW - fromW) * t);
+                params.height = Math.round(fromH + (targetH - fromH) * t);
                 try {
                     windowManager.updateViewLayout(panelView, params);
                 } catch (Exception ignored) {}
