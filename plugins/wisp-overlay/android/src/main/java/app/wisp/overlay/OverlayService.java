@@ -1,5 +1,6 @@
 package app.wisp.overlay;
 
+import android.animation.ValueAnimator;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -19,6 +20,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.view.animation.DecelerateInterpolator;
 import android.content.res.AssetManager;
 import android.webkit.MimeTypeMap;
 import android.webkit.WebResourceResponse;
@@ -67,6 +69,7 @@ public class OverlayService extends Service {
     private int downY;
     private boolean moved;
     private long ignoreOutsideUntil = 0;
+    private ValueAnimator panelSizeAnimator;
 
     public static boolean isRunning() {
         return running;
@@ -127,6 +130,7 @@ public class OverlayService extends Service {
     public void onDestroy() {
         running = false;
         if (instance == this) instance = null;
+        if (panelSizeAnimator != null) panelSizeAnimator.cancel();
         detach(handleView);
         detach(panelWeb);
         hideDismiss();
@@ -150,11 +154,14 @@ public class OverlayService extends Service {
         applyPanelSize(cssWidth, cssHeight);
         panelReady = true;
         if (panelView.getAlpha() < 1f) {
-            panelView.animate().alpha(1f).setDuration(90).start();
+            panelView.animate().alpha(1f).setDuration(160).start();
         }
         if (expanded) detach(handleView);
     }
 
+    /** Interpolates width/height instead of snapping, so a growing note list
+     * or the initial content-size reveal doesn't jump straight to its final
+     * size. */
     private void applyPanelSize(int cssWidth, int cssHeight) {
         if (panelView == null || windowManager == null) return;
         try {
@@ -166,9 +173,28 @@ public class OverlayService extends Service {
             WindowManager.LayoutParams params =
                 (WindowManager.LayoutParams) panelView.getLayoutParams();
             if (params == null) return;
-            params.width = w;
-            params.height = h;
-            windowManager.updateViewLayout(panelView, params);
+            if (panelSizeAnimator != null) panelSizeAnimator.cancel();
+            if (panelView.getParent() == null) {
+                params.width = w;
+                params.height = h;
+                return;
+            }
+            int fromW = params.width > 0 ? params.width : w;
+            int fromH = params.height > 0 ? params.height : h;
+            if (fromW == w && fromH == h) return;
+            ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+            animator.setDuration(160);
+            animator.setInterpolator(new DecelerateInterpolator());
+            animator.addUpdateListener(a -> {
+                float t = (float) a.getAnimatedValue();
+                params.width = Math.round(fromW + (w - fromW) * t);
+                params.height = Math.round(fromH + (h - fromH) * t);
+                try {
+                    windowManager.updateViewLayout(panelView, params);
+                } catch (Exception ignored) {}
+            });
+            panelSizeAnimator = animator;
+            animator.start();
         } catch (Exception ignored) {}
     }
 

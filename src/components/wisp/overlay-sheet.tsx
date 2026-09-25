@@ -124,7 +124,7 @@ export function OverlaySheet() {
           type="button"
           onClick={close}
           aria-label="Hide Wisp"
-          className="grid size-8 place-items-center rounded-full text-muted hover:text-fg"
+          className="grid size-8 place-items-center rounded-full text-muted transition-colors duration-150 hover:text-fg"
         >
           <X className="size-3.5" />
         </button>
@@ -133,7 +133,7 @@ export function OverlaySheet() {
           type="button"
           onClick={onCreate}
           aria-label="New note"
-          className="grid size-8 place-items-center rounded-full text-accent"
+          className="grid size-8 place-items-center rounded-full text-accent transition-transform duration-150 active:scale-90"
         >
           <Plus className="size-3.5" />
         </button>
@@ -141,6 +141,7 @@ export function OverlaySheet() {
 
       {selected && !selected.deletedAt ? (
         <OverlayNote
+          key={selected.id}
           heading={selected.heading}
           body={selected.body}
           onHeading={(heading) =>
@@ -155,7 +156,8 @@ export function OverlaySheet() {
         />
       ) : (
         <div
-          className="flex w-full max-w-[264px] flex-col items-end gap-1.5 overflow-y-auto overscroll-contain"
+          key="list"
+          className="wisp-overlay-in flex w-full max-w-[264px] flex-col items-end gap-1.5 overflow-y-auto overscroll-contain"
           style={{ maxHeight: listMax }}
         >
           {list.length === 0 ? (
@@ -177,7 +179,7 @@ export function OverlaySheet() {
                   onClick={() => useNotesStore.getState().setSelectedId(note.id)}
                   className={cn(
                     bubble,
-                    "w-full max-w-[264px] px-3.5 py-2 text-left font-display leading-snug tracking-tight",
+                    "wisp-overlay-in w-full max-w-[264px] px-3.5 py-2 text-left font-display leading-snug tracking-tight transition-[background-color,transform] duration-150 active:scale-[0.98]",
                     note.heading.trim() ? "" : "italic text-muted",
                   )}
                   style={{ fontSize: "var(--overlay-heading, 16px)" }}
@@ -219,14 +221,14 @@ function OverlayNote({
 
   return (
     <div
-      className="flex w-full max-w-[264px] flex-col items-end gap-1.5 overflow-y-auto overscroll-contain"
+      className="wisp-overlay-in flex w-full max-w-[264px] flex-col items-end gap-1.5 overflow-y-auto overscroll-contain"
       style={{ maxHeight: listMax }}
     >
       <div className="flex w-full items-center justify-end gap-1">
         <button
           type="button"
           onClick={onBack}
-          className={cn(bubble, "px-3 py-1 text-xs text-muted")}
+          className={cn(bubble, "px-3 py-1 text-xs text-muted transition-colors duration-150 hover:text-fg")}
         >
           Headings
         </button>
@@ -234,7 +236,7 @@ function OverlayNote({
           type="button"
           onClick={onDelete}
           aria-label="Delete note"
-          className={cn(bubble, "grid size-8 place-items-center text-danger")}
+          className={cn(bubble, "grid size-8 place-items-center text-danger transition-transform duration-150 active:scale-90")}
         >
           <Trash2 className="size-3.5" />
         </button>

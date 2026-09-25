@@ -132,12 +132,31 @@ html.wisp-overlay-mode body {
   }
 }
 
+@keyframes wisp-overlay-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.wisp-overlay-in {
+  animation: wisp-overlay-in 180ms var(--ease-smooth);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wisp-shimmer {
     animation: none;
   }
 
   .wisp-flame-core {
+    animation: none;
+  }
+
+  .wisp-overlay-in {
     animation: none;
   }
 
