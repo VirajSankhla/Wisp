@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type TouchEvent } from "react";
-import { collapseNativeOverlay } from "@/lib/overlay";
+import { collapseNativeOverlay, isAndroidNative } from "@/lib/overlay";
 import { installFaultLogger } from "@/lib/notes/fault-log";
 import { startStoreBridge, pullNativeNotes } from "@/lib/notes/bridge";
 import { startRemoteSync } from "@/lib/pairing/remote";
@@ -206,7 +206,7 @@ export function WispApp() {
     >
       {overlayMode ? null : (
         <>
-          <DesktopScene panelOpen={panelOpen} />
+          {isAndroidNative() ? null : <DesktopScene panelOpen={panelOpen} />}
           <button
             type="button"
             className="absolute inset-0 z-0"
