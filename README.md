@@ -4,9 +4,9 @@
 
 <h1 align="center">Wisp</h1>
 
-<p align="center"><strong>A tiny personal memory at the edge of the screen.</strong></p>
+<p align="center"><strong>Notes that live on the edge of your screen.</strong></p>
 
-<p align="center">Write a heading. Tuck it away. Pull it back when you need it.</p>
+<p align="center">Jot it. Tuck it. Grab it back in a swipe.</p>
 
 <p align="center">
   <a href="https://github.com/VirajSankhla/Wisp/releases/latest"><img src="https://img.shields.io/github/v/release/VirajSankhla/Wisp?include_prereleases&label=latest" alt="release" /></a>

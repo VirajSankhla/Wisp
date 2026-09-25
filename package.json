@@ -1,6 +1,7 @@
 {
   "name": "wisp",
   "private": true,
+  "description": "A personal, local-first notes app that lives at the edge of your screen.",
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
