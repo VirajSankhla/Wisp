@@ -3,6 +3,13 @@
   "private": true,
   "description": "A personal, local-first notes app that lives at the edge of your screen.",
   "license": "MIT",
+  "author": "Viraj Sankhla",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VirajSankhla/Wisp"
+  },
+  "homepage": "https://github.com/VirajSankhla/Wisp",
+  "bugs": "https://github.com/VirajSankhla/Wisp/issues",
   "sideEffects": false,
   "type": "module",
   "overrides": {

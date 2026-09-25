@@ -2,7 +2,7 @@
 name = "wisp"
 version = "0.1.0"
 description = "Heading-first notes at the edge of the screen"
-authors = ["Wisp"]
+authors = ["Viraj Sankhla"]
 edition = "2021"
 
 [lib]
