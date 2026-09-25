@@ -115,20 +115,20 @@ html.wisp-overlay-mode body {
   background: transparent !important;
 }
 
-.wisp-flame-core {
-  transform-origin: 12px 16px;
-  animation: wisp-breathe 2.8s ease-in-out infinite;
+.wisp-mark-pulse {
+  transform-origin: 17.5px 12px;
+  animation: wisp-mark-breathe 2.8s ease-in-out infinite;
 }
 
-@keyframes wisp-breathe {
+@keyframes wisp-mark-breathe {
   0%,
   100% {
-    opacity: 0.18;
+    opacity: 0.85;
     transform: scale(1);
   }
   50% {
-    opacity: 0.32;
-    transform: scale(1.06);
+    opacity: 1;
+    transform: scale(1.08);
   }
 }
 
@@ -152,7 +152,7 @@ html.wisp-overlay-mode body {
     animation: none;
   }
 
-  .wisp-flame-core {
+  .wisp-mark-pulse {
     animation: none;
   }
 
