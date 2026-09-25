@@ -61,6 +61,37 @@ export async function connectAndPush(remote: RemoteSync): Promise<"pushed" | "sa
   }
 }
 
+const JSONBIN_BASE = "https://api.jsonbin.io/v3/b/";
+
+/** Accepts a bare bin id or a full jsonbin URL someone pasted from the dashboard. */
+export function parseJsonBinId(raw: string): string {
+  const text = raw.trim();
+  if (!text) return "";
+  try {
+    const url = new URL(text);
+    const parts = url.pathname.split("/").filter(Boolean);
+    return parts[parts.length - 1] ?? "";
+  } catch {
+    return text;
+  }
+}
+
+/** Accepts a bare key or the full "X-Master-Key: ..." line jsonbin shows you. */
+export function parseJsonBinKey(raw: string): string {
+  const text = raw.trim();
+  const cut = text.indexOf(":");
+  if (cut > 0 && /master-key/i.test(text.slice(0, cut))) {
+    return text.slice(cut + 1).trim();
+  }
+  return text;
+}
+
+export function buildJsonBinRemote(binIdOrUrl: string, keyOrHeader: string): RemoteSync {
+  const id = parseJsonBinId(binIdOrUrl);
+  const key = parseJsonBinKey(keyOrHeader);
+  return { url: id ? `${JSONBIN_BASE}${id}` : "", header: key ? `X-Master-Key: ${key}` : "" };
+}
+
 export function validateRemoteUrl(raw: string): string {
   const url = raw.trim();
   let parsed: URL;

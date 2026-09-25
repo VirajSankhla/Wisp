@@ -16,9 +16,12 @@ import {
 import { encodeInvite, isInviteShape, parseInvite } from "@/lib/pairing/invite";
 import { pairingQrSvg } from "@/lib/pairing/qr";
 import {
+  buildJsonBinRemote,
   clearRemote,
   connectAndPush,
   loadRemote,
+  parseJsonBinId,
+  parseJsonBinKey,
   validateRemoteUrl,
 } from "@/lib/pairing/remote";
 import {
@@ -51,22 +54,37 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
   const [copied, setCopied] = useState(false);
   const [apiUrl, setApiUrl] = useState("");
   const [apiHeader, setApiHeader] = useState("");
+  const [advanced, setAdvanced] = useState(false);
+  const [binId, setBinId] = useState("");
+  const [masterKey, setMasterKey] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const jsonBinUrl = buildJsonBinRemote(binId, masterKey).url;
 
   useEffect(() => {
     setConnected(hasVault());
     const remote = loadRemote();
-    if (remote) {
-      setApiUrl(remote.url);
-      setApiHeader(remote.header);
+    if (!remote) return;
+    setApiUrl(remote.url);
+    setApiHeader(remote.header);
+    if (/^https:\/\/api\.jsonbin\.io\/v3\/b\/[^/]+$/.test(remote.url)) {
+      setBinId(parseJsonBinId(remote.url));
+      setMasterKey(parseJsonBinKey(remote.header));
+    } else if (remote.url) {
+      setAdvanced(true);
     }
   }, []);
 
   async function persistApi() {
-    const url = validateRemoteUrl(apiUrl);
-    const remote = { url, header: apiHeader };
+    const remote = advanced
+      ? { url: validateRemoteUrl(apiUrl), header: apiHeader }
+      : (() => {
+          const built = buildJsonBinRemote(binId, masterKey);
+          if (!built.url) throw new Error("Add the bin ID from jsonbin.io");
+          return { url: validateRemoteUrl(built.url), header: built.header };
+        })();
     const result = await connectAndPush(remote);
-    setApiUrl(url);
+    setApiUrl(remote.url);
+    setApiHeader(remote.header);
     setConnected(hasVault());
     return result;
   }
@@ -251,20 +269,51 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
               >
                 Full instructions on how to connect
               </button>
-              <label className="text-xs text-subtle">API URL (GET + PUT JSON)</label>
-              <input
-                value={apiUrl}
-                onChange={(e) => setApiUrl(e.target.value)}
-                placeholder="https://api.jsonbin.io/v3/b/…"
-                className="h-9 w-full rounded-xl bg-fg/6 px-3 font-mono text-xs text-fg placeholder:text-subtle focus:outline-none"
-              />
-              <label className="text-xs text-subtle">Optional header</label>
-              <input
-                value={apiHeader}
-                onChange={(e) => setApiHeader(e.target.value)}
-                placeholder="X-Master-Key: …"
-                className="h-9 w-full rounded-xl bg-fg/6 px-3 font-mono text-xs text-fg placeholder:text-subtle focus:outline-none"
-              />
+              {advanced ? (
+                <>
+                  <label className="text-xs text-subtle">API URL (GET + PUT JSON)</label>
+                  <input
+                    value={apiUrl}
+                    onChange={(e) => setApiUrl(e.target.value)}
+                    placeholder="https://api.jsonbin.io/v3/b/…"
+                    className="h-9 w-full rounded-xl bg-fg/6 px-3 font-mono text-xs text-fg placeholder:text-subtle focus:outline-none"
+                  />
+                  <label className="text-xs text-subtle">Optional header</label>
+                  <input
+                    value={apiHeader}
+                    onChange={(e) => setApiHeader(e.target.value)}
+                    placeholder="X-Master-Key: …"
+                    className="h-9 w-full rounded-xl bg-fg/6 px-3 font-mono text-xs text-fg placeholder:text-subtle focus:outline-none"
+                  />
+                </>
+              ) : (
+                <>
+                  <label className="text-xs text-subtle">Bin ID</label>
+                  <input
+                    value={binId}
+                    onChange={(e) => setBinId(parseJsonBinId(e.target.value))}
+                    placeholder="Paste the bin id or its URL"
+                    className="h-9 w-full rounded-xl bg-fg/6 px-3 font-mono text-xs text-fg placeholder:text-subtle focus:outline-none"
+                  />
+                  <label className="text-xs text-subtle">Master key</label>
+                  <input
+                    value={masterKey}
+                    onChange={(e) => setMasterKey(parseJsonBinKey(e.target.value))}
+                    placeholder="Paste X-Master-Key"
+                    className="h-9 w-full rounded-xl bg-fg/6 px-3 font-mono text-xs text-fg placeholder:text-subtle focus:outline-none"
+                  />
+                  {jsonBinUrl ? (
+                    <p className="break-all font-mono text-[10px] text-subtle">{jsonBinUrl}</p>
+                  ) : null}
+                </>
+              )}
+              <button
+                type="button"
+                className="text-left text-xs text-subtle underline-offset-2 hover:underline"
+                onClick={() => setAdvanced((v) => !v)}
+              >
+                {advanced ? "Use jsonbin.io instead" : "Use a different host"}
+              </button>
               <Button
                 type="button"
                 size="sm"
@@ -369,19 +418,9 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
                 leave the body as <span className="font-mono text-fg">{"{}"}</span>.
               </li>
               <li>
-                Copy the bin id and the <span className="text-fg">X-Master-Key</span>.
-              </li>
-              <li>
-                URL:{" "}
-                <span className="font-mono text-fg">
-                  https://api.jsonbin.io/v3/b/YOUR_BIN_ID
-                </span>
-              </li>
-              <li>
-                Header:{" "}
-                <span className="font-mono text-fg">
-                  X-Master-Key: YOUR_KEY
-                </span>
+                Copy the bin id and the <span className="text-fg">X-Master-Key</span>{" "}
+                — paste each straight into its field. Wisp builds the URL and
+                header for you.
               </li>
               <li>
                 Tap <span className="text-fg">Save API</span>. Wisp uploads the
@@ -393,8 +432,11 @@ export function DevicesPanel({ onBack }: { onBack: () => void }) {
               </li>
             </ol>
             <p className="text-xs text-subtle">
-              Any other host that accepts GET and PUT of JSON also works. One
-              optional header, as <span className="font-mono">Name: value</span>.
+              Using a different host? Tap{" "}
+              <span className="text-fg">Use a different host</span> on the
+              Devices screen for a raw URL + header field — any host that
+              accepts GET and PUT of JSON works, with one optional header as{" "}
+              <span className="font-mono">Name: value</span>.
             </p>
             <Button type="button" size="sm" onClick={() => setMode("home")}>
               Back to Devices
