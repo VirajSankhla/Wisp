@@ -61,6 +61,9 @@ export function WispApp() {
         if (!launch.overlay) s.seedIfEmpty();
         if (!launch.overlay) s.purgeExpiredTrash();
         s.setHasHydrated(true);
+        if (isAndroidNative() && !launch.overlay && !s.panelOpen) {
+          s.setPanelOpen(true);
+        }
         if (launch.overlay) {
           document.documentElement.classList.add("wisp-overlay-mode");
           s.setPanelOpen(true);
@@ -174,6 +177,7 @@ export function WispApp() {
     touchStart.current = null;
     const t = e.changedTouches[0];
     if (!start || !t) return;
+    if (isAndroidNative()) return;
     const dx = t.clientX - start.x;
     const dy = t.clientY - start.y;
     if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.15) return;
